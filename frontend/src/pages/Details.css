@@ -1,0 +1,392 @@
+/* =================================
+   MONTAI - MODEL DETAILS
+================================= */
+
+.model-details-page {
+  min-height: 100vh;
+  padding: 120px 8% 80px;
+
+  background:
+    radial-gradient(
+      circle at 50% 10%,
+      rgba(99, 102, 241, 0.12),
+      transparent 35%
+    ),
+    #07080d;
+
+  color: #f5f5f7;
+}
+
+
+/* =================================
+   BACK BUTTON
+================================= */
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+
+  margin-bottom: 35px;
+
+  color: #a78bfa;
+  text-decoration: none;
+
+  font-size: 15px;
+  font-weight: 600;
+
+  transition: all 0.2s ease;
+}
+
+.back-link:hover {
+  color: #c4b5fd;
+  transform: translateX(-4px);
+}
+
+
+/* =================================
+   MAIN CARD
+================================= */
+
+.model-details-card {
+  position: relative;
+
+  max-width: 950px;
+  margin: 0 auto;
+
+  padding: 50px;
+
+  background:
+    linear-gradient(
+      145deg,
+      #141720,
+      #0d0f16
+    );
+
+  border: 1px solid #292d3a;
+
+  border-radius: 24px;
+
+  box-shadow:
+    0 30px 90px rgba(0, 0, 0, 0.45);
+
+  overflow: hidden;
+}
+
+
+/* Purple glow */
+
+.model-details-card::before {
+  content: "";
+
+  position: absolute;
+
+  width: 350px;
+  height: 350px;
+
+  top: -180px;
+  right: -120px;
+
+  background: #6c4df6;
+
+  opacity: 0.10;
+
+  filter: blur(100px);
+
+  pointer-events: none;
+}
+
+
+/* =================================
+   TOP AREA
+================================= */
+
+.model-details-top {
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  margin-bottom: 35px;
+}
+
+
+/* =================================
+   AI ICON
+================================= */
+
+.model-icon {
+  width: 76px;
+  height: 76px;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 20px;
+
+  background:
+    linear-gradient(
+      135deg,
+      #7950ff,
+      #5b43e8
+    );
+
+  color: white;
+
+  font-size: 24px;
+  font-weight: 700;
+
+  box-shadow:
+    0 15px 35px rgba(108, 77, 246, 0.30);
+}
+
+
+/* =================================
+   CATEGORY
+================================= */
+
+.model-category {
+  padding: 10px 16px;
+
+  background: #181b32;
+
+  border: 1px solid #292c50;
+
+  border-radius: 9px;
+
+  color: #a78bfa;
+
+  font-size: 14px;
+
+  font-weight: 600;
+}
+
+
+/* =================================
+   MODEL TITLE
+================================= */
+
+.model-details-card h1 {
+  position: relative;
+
+  margin: 0 0 20px;
+
+  font-size: 56px;
+
+  line-height: 1.05;
+
+  letter-spacing: -2.5px;
+
+  font-weight: 750;
+}
+
+
+/* =================================
+   DESCRIPTION
+================================= */
+
+.model-details-description {
+  max-width: 760px;
+
+  margin-bottom: 45px;
+
+  color: #9299ad;
+
+  font-size: 18px;
+
+  line-height: 1.7;
+}
+
+
+/* =================================
+   INFORMATION GRID
+================================= */
+
+.model-info-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(2, 1fr);
+
+  gap: 16px;
+
+  margin-bottom: 45px;
+}
+
+
+/* =================================
+   INFO BOX
+================================= */
+
+.info-box {
+  padding: 22px;
+
+  background: #0b0d13;
+
+  border: 1px solid #252936;
+
+  border-radius: 14px;
+
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 9px;
+
+  transition:
+    border-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.info-box:hover {
+  border-color: #474b61;
+
+  transform: translateY(-2px);
+}
+
+.info-box span {
+  color: #71788b;
+
+  font-size: 13px;
+}
+
+.info-box strong {
+  color: #f5f5f7;
+
+  font-size: 17px;
+}
+
+
+/* =================================
+   LICENSE SECTION
+================================= */
+
+.license-section {
+  padding-top: 35px;
+
+  border-top: 1px solid #282c38;
+}
+
+.license-section h2 {
+  margin: 0 0 10px;
+
+  font-size: 26px;
+
+  letter-spacing: -0.5px;
+}
+
+.license-section p {
+  margin: 0 0 25px;
+
+  color: #858c9f;
+
+  font-size: 15px;
+
+  line-height: 1.6;
+}
+
+
+/* =================================
+   BUY BUTTON
+================================= */
+
+.buy-license-button {
+  border: none;
+
+  padding: 15px 28px;
+
+  border-radius: 10px;
+
+  background:
+    linear-gradient(
+      135deg,
+      #7652ff,
+      #6245e8
+    );
+
+  color: white;
+
+  font-size: 15px;
+
+  font-weight: 700;
+
+  cursor: pointer;
+
+  box-shadow:
+    0 12px 30px rgba(108, 77, 246, 0.25);
+
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.buy-license-button:hover {
+  transform: translateY(-2px);
+
+  box-shadow:
+    0 16px 40px rgba(108, 77, 246, 0.40);
+}
+
+
+/* =================================
+   MODEL NOT FOUND
+================================= */
+
+.model-not-found {
+  min-height: 100vh;
+
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+
+  justify-content: center;
+
+  gap: 20px;
+
+  background: #07080d;
+
+  color: white;
+}
+
+.model-not-found a {
+  color: #a78bfa;
+
+  text-decoration: none;
+}
+
+
+/* =================================
+   MOBILE
+================================= */
+
+@media (max-width: 700px) {
+
+  .model-details-page {
+    padding: 90px 20px 50px;
+  }
+
+  .model-details-card {
+    padding: 30px 24px;
+  }
+
+  .model-details-card h1 {
+    font-size: 40px;
+  }
+
+  .model-details-description {
+    font-size: 16px;
+  }
+
+  .model-info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .model-details-top {
+    align-items: flex-start;
+  }
+
+}
