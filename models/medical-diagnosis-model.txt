@@ -1,0 +1,15 @@
+Medical Diagnosis AI Model
+
+Version: 1.0
+
+This is a prototype AI model used for demonstrating
+decentralized AI model licensing.
+
+Model Owner:
+Blockchain Project
+
+License:
+Commercial
+
+Integrity:
+Verified using blockchain hash.

@@ -10,6 +10,9 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "hardhat": "^3.14.0"
-  }
+    "@nomicfoundation/hardhat-toolbox-mocha-ethers": "^3.0.7",
+    "hardhat": "^3.14.0",
+    "solc": "^0.8.28"
+  },
+  "type": "module"
 }
