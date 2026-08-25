@@ -1,0 +1,228 @@
+/* =========================
+   NAVBAR
+========================= */
+
+.navbar {
+  width: 100%;
+  height: 88px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 0 64px;
+
+  box-sizing: border-box;
+
+  background: #08090d;
+
+  border-bottom: 1px solid #20222b;
+
+  position: relative;
+  z-index: 100;
+}
+
+
+/* =========================
+   LOGO
+========================= */
+
+.navbar-logo {
+  color: #ffffff;
+
+  text-decoration: none;
+
+  font-size: 20px;
+  font-weight: 700;
+
+  letter-spacing: -0.5px;
+
+  transition: 0.2s ease;
+}
+
+.navbar-logo:hover {
+  color: #8b6cff;
+}
+
+
+/* =========================
+   NAVIGATION LINKS
+========================= */
+
+.navbar-links {
+  display: flex;
+  align-items: center;
+
+  gap: 42px;
+}
+
+.navbar-links a {
+  color: #b8bac5;
+
+  text-decoration: none;
+
+  font-size: 16px;
+  font-weight: 500;
+
+  transition: color 0.2s ease;
+}
+
+.navbar-links a:hover {
+  color: #ffffff;
+}
+
+
+/* =========================
+   RIGHT SIDE
+========================= */
+
+.navbar-right {
+  display: flex;
+  align-items: center;
+}
+
+
+/* =========================
+   LOGIN BUTTON
+========================= */
+
+.login-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 12px 24px;
+
+  background: linear-gradient(
+    135deg,
+    #7545ff,
+    #6845e8
+  );
+
+  color: #ffffff;
+
+  text-decoration: none;
+
+  font-size: 15px;
+  font-weight: 600;
+
+  border-radius: 10px;
+
+  transition: 0.2s ease;
+}
+
+.login-button:hover {
+  transform: translateY(-1px);
+
+  box-shadow:
+    0 8px 25px rgba(117, 69, 255, 0.3);
+}
+
+
+/* =========================
+   USER SECTION
+========================= */
+
+.user-section {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+
+/* =========================
+   PROFILE
+========================= */
+
+.profile-button {
+  color: #b8bac5;
+
+  text-decoration: none;
+
+  font-size: 14px;
+  font-weight: 500;
+
+  transition: color 0.2s ease;
+}
+
+.profile-button:hover {
+  color: #ffffff;
+}
+
+
+/* =========================
+   LOGOUT
+========================= */
+
+.logout-button {
+  border: none;
+
+  padding: 10px 18px;
+
+  border-radius: 8px;
+
+  background: #20222b;
+
+  color: #ffffff;
+
+  font-size: 14px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition: 0.2s ease;
+}
+
+.logout-button:hover {
+  background: #2c2e38;
+}
+
+
+/* =========================
+   MOBILE
+========================= */
+
+@media (max-width: 900px) {
+
+  .navbar {
+    padding: 0 25px;
+  }
+
+  .navbar-links {
+    gap: 20px;
+  }
+
+  .navbar-links a {
+    font-size: 14px;
+  }
+
+}
+
+
+@media (max-width: 700px) {
+
+  .navbar {
+    height: auto;
+
+    min-height: 80px;
+
+    flex-wrap: wrap;
+
+    gap: 20px;
+
+    padding: 20px 25px;
+  }
+
+  .navbar-links {
+    order: 3;
+
+    width: 100%;
+
+    justify-content: center;
+
+    flex-wrap: wrap;
+
+    gap: 18px;
+  }
+
+}

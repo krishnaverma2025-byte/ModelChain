@@ -1,113 +1,248 @@
 import { Link, useParams } from "react-router-dom";
 
-const models = {
-  "visionai-pro": {
-    name: "VisionAI Pro",
+const modelData = {
+  "vision-ai": {
+    name: "Vision AI",
     category: "Computer Vision",
+    price: "0.05 ETH",
     description:
-      "Advanced image recognition and object detection model designed for intelligent visual applications.",
-    creator: "0x7A...91F2",
-    rating: "4.9",
-    price: "0.15 ETH",
+      "Advanced computer vision model for image recognition and analysis.",
+    creator: "AI Research Labs",
   },
 
-  "textgen-x": {
-    name: "TextGen X",
+  textmind: {
+    name: "TextMind",
     category: "Natural Language",
+    price: "0.08 ETH",
     description:
-      "Powerful language model for text generation, summarization, and intelligent content processing.",
-    creator: "0x3B...72AC",
-    rating: "4.8",
-    price: "0.12 ETH",
+      "Powerful language model designed for intelligent text generation.",
+    creator: "Neural Systems",
   },
 
-  "fraudguard": {
-    name: "FraudGuard",
-    category: "Fraud Detection",
+  predictx: {
+    name: "PredictX",
+    category: "Predictive AI",
+    price: "0.04 ETH",
     description:
-      "Machine learning model built to identify suspicious transactions and detect fraudulent behavior.",
-    creator: "0x9D...45BE",
-    rating: "4.7",
-    price: "0.18 ETH",
+      "Machine learning model for predictive analytics and forecasting.",
+    creator: "Predictive Labs",
   },
 };
 
-function Details() {
+function ModelDetails() {
   const { id } = useParams();
 
-  // Normalize the URL ID
-  const modelId = id?.toLowerCase().trim();
-
-  const model = models[modelId];
+  const model = modelData[id];
 
   if (!model) {
     return (
-      <main className="details-page not-found">
+      <div style={styles.page}>
         <h1>Model Not Found</h1>
 
-        <p>
-          Model ID: <strong>{id}</strong>
-        </p>
-
-        <Link to="/marketplace">
+        <Link to="/marketplace" style={styles.button}>
           Back to Marketplace
         </Link>
-      </main>
+      </div>
     );
   }
 
   return (
-    <main className="details-page">
+    <div style={styles.page}>
+      <header style={styles.header}>
+        <Link to="/" style={styles.logo}>
+          MontAI
+        </Link>
 
-      <Link to="/marketplace" className="back-link">
-        ← Back to Marketplace
-      </Link>
+        <nav style={styles.nav}>
+          <Link to="/" style={styles.navLink}>
+            Home
+          </Link>
+          <Link to="/marketplace" style={styles.navLink}>
+            Marketplace
+          </Link>
+          <Link to="/upload" style={styles.navLink}>
+            Upload Model
+          </Link>
+          <Link to="/dashboard" style={styles.navLink}>
+            Dashboard
+          </Link>
+        </nav>
 
-      <div className="details-card">
+        <Link to="/login" style={styles.login}>
+          Login
+        </Link>
+      </header>
 
-        <div className="model-icon">
-          AI
-        </div>
+      <main style={styles.container}>
+        <Link to="/marketplace" style={styles.back}>
+          ← Back to Marketplace
+        </Link>
 
-        <div className="model-category">
-          {model.category}
-        </div>
+        <div style={styles.content}>
+          <div style={styles.icon}>AI</div>
 
-        <h1>
-          {model.name}
-        </h1>
+          <div style={styles.badge}>{model.category}</div>
 
-        <p className="model-description">
-          {model.description}
-        </p>
+          <h1 style={styles.title}>{model.name}</h1>
 
-        <div className="details-info">
+          <p style={styles.description}>{model.description}</p>
 
-          <div>
-            <span>Creator</span>
+          <div style={styles.creator}>
+            <span>Created by</span>
             <strong>{model.creator}</strong>
           </div>
 
-          <div>
-            <span>Rating</span>
-            <strong>★ {model.rating}</strong>
-          </div>
+          <div style={styles.purchaseBox}>
+            <div>
+              <span style={styles.priceLabel}>License Price</span>
+              <div style={styles.price}>{model.price}</div>
+            </div>
 
-          <div>
-            <span>License Price</span>
-            <strong>{model.price}</strong>
+            <button style={styles.buyButton}>
+              License Model
+            </button>
           </div>
-
         </div>
-
-        <button className="license-button">
-          License Model
-        </button>
-
-      </div>
-
-    </main>
+      </main>
+    </div>
   );
 }
 
-export default Details;
+const styles = {
+  page: {
+    minHeight: "100vh",
+    background: "#08090d",
+    color: "#fff",
+    fontFamily: "Arial, sans-serif",
+  },
+
+  header: {
+    height: "88px",
+    borderBottom: "1px solid #24252d",
+    display: "flex",
+    alignItems: "center",
+    padding: "0 5%",
+  },
+
+  logo: {
+    color: "#fff",
+    textDecoration: "none",
+    fontSize: "26px",
+    fontWeight: "800",
+  },
+
+  nav: {
+    display: "flex",
+    gap: "45px",
+    margin: "0 auto",
+  },
+
+  navLink: {
+    color: "#c8c9d4",
+    textDecoration: "none",
+  },
+
+  login: {
+    background: "#7040f5",
+    color: "#fff",
+    padding: "15px 28px",
+    borderRadius: "12px",
+    textDecoration: "none",
+    fontWeight: "700",
+  },
+
+  container: {
+    width: "75%",
+    maxWidth: "1000px",
+    margin: "0 auto",
+    padding: "70px 0",
+  },
+
+  back: {
+    color: "#9b72ff",
+    textDecoration: "none",
+  },
+
+  content: {
+    marginTop: "50px",
+    background: "#0d0e14",
+    border: "1px solid #292b35",
+    borderRadius: "22px",
+    padding: "55px",
+  },
+
+  icon: {
+    width: "90px",
+    height: "90px",
+    background: "#6840ed",
+    borderRadius: "22px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: "30px",
+    fontWeight: "800",
+  },
+
+  badge: {
+    color: "#9b72ff",
+    marginTop: "35px",
+    fontWeight: "700",
+  },
+
+  title: {
+    fontSize: "60px",
+    margin: "15px 0",
+  },
+
+  description: {
+    color: "#9da0b4",
+    fontSize: "20px",
+    lineHeight: "1.7",
+    maxWidth: "750px",
+  },
+
+  creator: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "8px",
+    marginTop: "35px",
+    color: "#9da0b4",
+  },
+
+  purchaseBox: {
+    marginTop: "50px",
+    padding: "30px",
+    border: "1px solid #30323d",
+    borderRadius: "15px",
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+
+  priceLabel: {
+    color: "#9da0b4",
+  },
+
+  price: {
+    fontSize: "28px",
+    fontWeight: "800",
+    marginTop: "8px",
+  },
+
+  buyButton: {
+    background: "#7040f5",
+    color: "#fff",
+    border: "none",
+    borderRadius: "12px",
+    padding: "17px 30px",
+    fontSize: "16px",
+    fontWeight: "700",
+    cursor: "pointer",
+  },
+
+  button: {
+    color: "#fff",
+  },
+};
+
+export default ModelDetails;

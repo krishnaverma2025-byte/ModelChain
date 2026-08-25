@@ -1,40 +1,23 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
-import Navbar from "./components/Navbar";
-
 import Home from "./pages/Home";
 import Marketplace from "./pages/Marketplace";
-import Details from "./pages/Details";
+import UploadModel from "./pages/UploadModel";
+import Dashboard from "./pages/Dashboard";
+import Login from "./pages/Login";
+import Profile from "./pages/Profile";
 
 function App() {
   return (
     <BrowserRouter>
-
-      {/* NAVBAR — appears on every page */}
-      <Navbar />
-
       <Routes>
-
-        {/* Home */}
-        <Route
-          path="/"
-          element={<Home />}
-        />
-
-        {/* Marketplace */}
-        <Route
-          path="/marketplace"
-          element={<Marketplace />}
-        />
-
-        {/* Model Details */}
-        <Route
-          path="/model/:id"
-          element={<Details />}
-        />
-
+        <Route path="/" element={<Home />} />
+        <Route path="/marketplace" element={<Marketplace />} />
+        <Route path="/upload" element={<UploadModel />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/profile" element={<Profile />} />
+        <Route path="/login" element={<Login />} />
       </Routes>
-
     </BrowserRouter>
   );
 }

@@ -2,221 +2,88 @@ import { Link } from "react-router-dom";
 import "./Marketplace.css";
 
 function Marketplace() {
+  const models = [
+    {
+      name: "Vision AI",
+      description:
+        "Advanced computer vision model for image recognition and analysis.",
+      price: "0.05 ETH",
+      category: "Computer Vision",
+    },
+    {
+      name: "TextMind",
+      description:
+        "Powerful language model designed for intelligent text generation.",
+      price: "0.08 ETH",
+      category: "Natural Language",
+    },
+    {
+      name: "PredictX",
+      description:
+        "Machine learning model for predictive analytics and forecasting.",
+      price: "0.04 ETH",
+      category: "Predictive AI",
+    },
+  ];
+
   return (
     <div className="marketplace-page">
 
-      {/* HERO */}
-      <section className="marketplace-hero">
+      <header className="page-navbar">
+        <Link to="/" className="page-logo">
+          MontAI
+        </Link>
 
-        <div className="marketplace-badge">
-          DECENTRALIZED AI MARKETPLACE
+        <nav>
+          <Link to="/">Home</Link>
+          <Link to="/marketplace">Marketplace</Link>
+          <Link to="/upload">Upload Model</Link>
+          <Link to="/dashboard">Dashboard</Link>
+        </nav>
+
+        <Link to="/login" className="page-login">
+          Login
+        </Link>
+      </header>
+
+      <main className="marketplace-content">
+
+        <div className="section-label">
+          FEATURED MODELS
         </div>
 
-        <h1>
-          Discover AI Models
-        </h1>
+        <h1>Discover AI Models</h1>
 
-        <p>
-          Explore, license, and own AI models through
-          transparent blockchain-powered licensing.
+        <p className="section-description">
+          Explore models available for decentralized licensing.
         </p>
 
-      </section>
+        <div className="models-grid">
+          {models.map((model) => (
+            <div className="model-card" key={model.name}>
 
+              <div className="model-icon">
+                AI
+              </div>
 
-      {/* MODELS HEADER */}
-      <section className="models-header">
+              <h2>{model.name}</h2>
 
-        <div className="models-title">
+              <p>{model.description}</p>
 
-          <h2>
-            Available Models
-          </h2>
+              <div className="model-info">
+                <strong>{model.price}</strong>
+                <span>{model.category}</span>
+              </div>
 
-          <p>
-            6 models available
-          </p>
+              <button className="model-button">
+                View Model Details →
+              </button>
 
+            </div>
+          ))}
         </div>
 
-
-        <div className="category-buttons">
-
-          <button className="category-button active">
-            All Models
-          </button>
-
-          <button className="category-button">
-            Computer Vision
-          </button>
-
-          <button className="category-button">
-            NLP
-          </button>
-
-        </div>
-
-      </section>
-
-
-      {/* MODEL GRID */}
-      <section className="models-grid">
-
-
-        {/* VISION AI */}
-        <Link
-          to="/model/visionai-pro"
-          className="model-card-link"
-        >
-
-          <div className="model-card">
-
-            <div className="model-card-top">
-
-              <div className="model-icon">
-                AI
-              </div>
-
-              <div className="model-category">
-                Computer Vision
-              </div>
-
-            </div>
-
-
-            <h3>
-              VisionAI Pro
-            </h3>
-
-            <p className="model-description">
-              Advanced image recognition and object
-              detection model designed for intelligent
-              visual applications.
-            </p>
-
-
-            <div className="model-card-footer">
-
-              <div className="model-info">
-                <span>Creator</span>
-                <strong>0x7A...91F2</strong>
-              </div>
-
-              <div className="model-rating">
-                <span>Rating</span>
-                <strong>★ 4.9</strong>
-              </div>
-
-            </div>
-
-          </div>
-
-        </Link>
-
-
-        {/* TEXTGEN */}
-        <Link
-          to="/model/textgen-x"
-          className="model-card-link"
-        >
-
-          <div className="model-card">
-
-            <div className="model-card-top">
-
-              <div className="model-icon">
-                AI
-              </div>
-
-              <div className="model-category">
-                Natural Language
-              </div>
-
-            </div>
-
-
-            <h3>
-              TextGen X
-            </h3>
-
-            <p className="model-description">
-              Powerful language model for text generation,
-              summarization, and intelligent content
-              processing.
-            </p>
-
-
-            <div className="model-card-footer">
-
-              <div className="model-info">
-                <span>Creator</span>
-                <strong>0x3B...72AC</strong>
-              </div>
-
-              <div className="model-rating">
-                <span>Rating</span>
-                <strong>★ 4.8</strong>
-              </div>
-
-            </div>
-
-          </div>
-
-        </Link>
-
-
-        {/* FRAUDGUARD */}
-        <Link
-          to="/model/fraudguard"
-          className="model-card-link"
-        >
-
-          <div className="model-card">
-
-            <div className="model-card-top">
-
-              <div className="model-icon">
-                AI
-              </div>
-
-              <div className="model-category">
-                Fraud Detection
-              </div>
-
-            </div>
-
-
-            <h3>
-              FraudGuard
-            </h3>
-
-            <p className="model-description">
-              Machine learning model built to identify
-              suspicious transactions and detect
-              fraudulent behavior.
-            </p>
-
-
-            <div className="model-card-footer">
-
-              <div className="model-info">
-                <span>Creator</span>
-                <strong>0x9D...45BE</strong>
-              </div>
-
-              <div className="model-rating">
-                <span>Rating</span>
-                <strong>★ 4.7</strong>
-              </div>
-
-            </div>
-
-          </div>
-
-        </Link>
-
-
-      </section>
+      </main>
 
     </div>
   );

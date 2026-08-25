@@ -1,39 +1,60 @@
+import { Link } from "react-router-dom";
+import "./Home.css";
+
 function Home() {
   return (
-    <main className="hero">
+    <div className="home-page">
 
-      <div className="hero-badge">
-        DECENTRALIZED AI MARKETPLACE
-      </div>
+      <header className="navbar">
+        <Link to="/" className="navbar-logo">
+          MontAI
+        </Link>
 
-      <h1>
-        Own Your <span>AI License</span>
-      </h1>
+        <nav className="navbar-links">
+          <Link to="/">Home</Link>
+          <Link to="/marketplace">Marketplace</Link>
+          <Link to="/upload">Upload Model</Link>
+          <Link to="/dashboard">Dashboard</Link>
+        </nav>
 
-      <div className="hero-brand">
-        Mont<span>AI</span>
-      </div>
+        <Link to="/login" className="login-button">
+          Login
+        </Link>
+      </header>
 
-      <p className="hero-description">
-        Discover and license AI models through transparent,
-        blockchain-based
-        <br />
-        ownership and smart contracts.
-      </p>
+      <main className="hero">
 
-      <div className="hero-buttons">
+        <div className="hero-badge">
+          DECENTRALIZED AI MARKETPLACE
+        </div>
 
-        <a href="/marketplace" className="primary-button">
-          Explore Models
-        </a>
+        <h1 className="hero-title">
+          <span>Own Your</span>
+          <span className="gradient-text">AI License</span>
+        </h1>
 
-        <a href="/upload" className="secondary-button">
-          List Your Model
-        </a>
+        <div className="hero-brand">
+          MontAI
+        </div>
 
-      </div>
+        <p className="hero-description">
+          Discover and license AI models through transparent,
+          blockchain-based ownership and smart contracts.
+        </p>
 
-    </main>
+        <div className="hero-actions">
+          <Link to="/marketplace" className="primary-button">
+            Explore Models
+          </Link>
+
+          <Link to="/upload" className="secondary-button">
+            List Your Model
+          </Link>
+        </div>
+
+      </main>
+
+    </div>
   );
 }
 

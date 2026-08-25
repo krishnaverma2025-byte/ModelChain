@@ -1,0 +1,300 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  min-height: 100%;
+  background: #08090d;
+}
+
+body {
+  font-family: Arial, Helvetica, sans-serif;
+  color: #ffffff;
+}
+
+a {
+  text-decoration: none;
+}
+
+/* =========================
+   HOME
+========================= */
+
+.home-page {
+  min-height: 100vh;
+  width: 100%;
+  background: #08090d;
+  color: #ffffff;
+}
+
+/* =========================
+   NAVBAR
+========================= */
+
+.navbar {
+  height: 88px;
+  width: 100%;
+  padding: 0 84px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  border-bottom: 1px solid #272831;
+}
+
+.navbar-logo {
+  color: #ffffff;
+  font-size: 28px;
+  font-weight: 800;
+}
+
+.navbar-links {
+  display: flex;
+  align-items: center;
+  gap: 52px;
+}
+
+.navbar-links a {
+  color: #ffffff;
+  font-size: 20px;
+  font-weight: 500;
+}
+
+.navbar-links a:hover {
+  color: #9b6cff;
+}
+
+.login-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 122px;
+  height: 62px;
+
+  border-radius: 16px;
+
+  background: #713cff;
+  color: #ffffff;
+
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.login-button:hover {
+  background: #8052ff;
+}
+
+/* =========================
+   HERO
+========================= */
+
+.hero {
+  min-height: calc(100vh - 88px);
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  padding-top: 100px;
+  text-align: center;
+}
+
+/* =========================
+   BADGE
+========================= */
+
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 15px 27px;
+
+  border: 1px solid #7545ff;
+  border-radius: 40px;
+
+  color: #a778ff;
+
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+/* =========================
+   TITLE
+========================= */
+
+.hero-title {
+  margin: 70px 0 0;
+
+  display: flex;
+  flex-direction: column;
+
+  font-size: 112px;
+  line-height: 0.95;
+  font-weight: 900;
+  letter-spacing: -5px;
+}
+
+.hero-title span {
+  display: block;
+}
+
+.gradient-text {
+  background: linear-gradient(
+    90deg,
+    #a46cff,
+    #7659ff
+  );
+
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* =========================
+   BRAND
+========================= */
+
+.hero-brand {
+  margin-top: 70px;
+
+  font-size: 76px;
+  line-height: 1;
+  font-weight: 800;
+
+  background: linear-gradient(
+    90deg,
+    #a46cff,
+    #7659ff
+  );
+
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* =========================
+   DESCRIPTION
+========================= */
+
+.hero-description {
+  max-width: 850px;
+
+  margin: 48px auto 0;
+
+  color: #a7abc4;
+
+  font-size: 22px;
+  line-height: 1.8;
+}
+
+/* =========================
+   BUTTONS
+========================= */
+
+.hero-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 24px;
+
+  margin-top: 55px;
+}
+
+.primary-button,
+.secondary-button {
+  width: 248px;
+  height: 72px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 16px;
+
+  font-size: 19px;
+  font-weight: 700;
+}
+
+.primary-button {
+  background: #713cff;
+  color: #ffffff;
+
+  box-shadow: 0 12px 35px rgba(113, 60, 255, 0.25);
+}
+
+.primary-button:hover {
+  background: #8052ff;
+}
+
+.secondary-button {
+  border: 1px solid #30323d;
+  color: #ffffff;
+  background: transparent;
+}
+
+.secondary-button:hover {
+  border-color: #713cff;
+}
+
+/* =========================
+   RESPONSIVE
+========================= */
+
+@media (max-width: 1000px) {
+  .navbar {
+    padding: 0 35px;
+  }
+
+  .navbar-links {
+    gap: 25px;
+  }
+
+  .hero-title {
+    font-size: 80px;
+  }
+
+  .hero-brand {
+    font-size: 60px;
+  }
+}
+
+@media (max-width: 700px) {
+  .navbar {
+    padding: 0 20px;
+  }
+
+  .navbar-links {
+    display: none;
+  }
+
+  .hero {
+    padding: 70px 20px 50px;
+  }
+
+  .hero-title {
+    font-size: 58px;
+    letter-spacing: -2px;
+  }
+
+  .hero-brand {
+    font-size: 48px;
+  }
+
+  .hero-description {
+    font-size: 18px;
+  }
+
+  .hero-actions {
+    flex-direction: column;
+  }
+}
