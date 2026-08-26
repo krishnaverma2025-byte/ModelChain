@@ -1,95 +1,253 @@
+/* ================================
+   DASHBOARD PAGE
+================================ */
+
 .dashboard-page {
-  min-height: calc(100vh - 80px);
-  padding: 50px 7%;
+  min-height: calc(100vh - 92px);
+
   background: #08090d;
-  color: white;
+  color: #ffffff;
+
+  box-sizing: border-box;
 }
 
-.dashboard-container {
-  max-width: 1200px;
+
+/* MAIN CONTENT */
+
+.dashboard-content {
+  width: 100%;
+  max-width: 1500px;
+
   margin: 0 auto;
+
+  padding: 55px 36px 70px;
+
+  box-sizing: border-box;
 }
 
-.dashboard-title {
-  font-size: 42px;
-  font-weight: 700;
-  margin-bottom: 10px;
-}
 
-.dashboard-subtitle {
-  color: #9ca3af;
-  font-size: 17px;
+/* HEADER */
+
+.dashboard-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+
   margin-bottom: 40px;
 }
 
+.section-label {
+  color: #9b6cff;
+
+  font-size: 19px;
+  font-weight: 700;
+
+  letter-spacing: 2px;
+
+  margin-bottom: 32px;
+}
+
+.dashboard-header h1 {
+  margin: 0 0 22px;
+
+  color: #ffffff;
+
+  font-size: 40px;
+  font-weight: 700;
+}
+
+.dashboard-header p {
+  margin: 0;
+
+  color: #9fb1c9;
+
+  font-size: 20px;
+  line-height: 1.6;
+}
+
+
+/* DASHBOARD GRID */
+
 .dashboard-grid {
   display: grid;
+
   grid-template-columns: repeat(3, 1fr);
-  gap: 24px;
+
+  gap: 30px;
+
+  width: 100%;
 }
+
+
+/* DASHBOARD CARDS */
 
 .dashboard-card {
-  background: #111318;
-  border: 1px solid #252832;
-  border-radius: 14px;
-  padding: 28px;
+  min-height: 250px;
+
+  padding: 32px;
+
+  box-sizing: border-box;
+
+  background: #111217;
+
+  border: 1px solid #292d37;
+  border-radius: 18px;
+
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
-.dashboard-card h3 {
-  margin: 0 0 12px;
-  font-size: 20px;
+.dashboard-card:hover {
+  transform: translateY(-3px);
+
+  border-color: #444052;
+
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.25);
 }
+
+
+/* NUMBER */
+
+.card-number {
+  margin-bottom: 25px;
+
+  color: #ffffff;
+
+  font-size: 22px;
+  font-weight: 500;
+}
+
+
+/* CARD HEADING */
+
+.dashboard-card h2 {
+  margin: 0 0 20px;
+
+  color: #ffffff;
+
+  font-size: 30px;
+  font-weight: 700;
+}
+
+
+/* CARD DESCRIPTION */
 
 .dashboard-card p {
   margin: 0;
-  color: #9ca3af;
+
+  color: #91a5c0;
+
+  font-size: 19px;
+  line-height: 1.55;
 }
 
-.dashboard-stat {
-  font-size: 34px;
-  font-weight: 700;
-  color: #8b5cf6;
-  margin-bottom: 8px;
-}
 
-.dashboard-section {
-  margin-top: 40px;
-}
+/* ================================
+   CONNECT WALLET BUTTON
+   UNDER TRANSACTIONS
+================================ */
 
-.dashboard-section h2 {
-  font-size: 26px;
-  margin-bottom: 20px;
-}
+.dashboard-wallet-button {
+  margin-top: 28px;
 
-.empty-dashboard {
-  border: 1px dashed #303440;
-  border-radius: 14px;
-  padding: 40px;
-  text-align: center;
-  color: #9ca3af;
-}
+  padding: 13px 22px;
 
-.dashboard-button {
-  display: inline-block;
-  margin-top: 20px;
-  padding: 12px 20px;
-  border-radius: 8px;
-  background: #6d4aff;
-  color: white;
-  text-decoration: none;
+  border: 1px solid #6d3df5;
+  border-radius: 10px;
+
+  background: #6d3df5;
+  color: #ffffff;
+
+  font-size: 16px;
   font-weight: 600;
+
+  cursor: pointer;
+
+  transition: all 0.2s ease;
 }
 
-.dashboard-button:hover {
-  background: #7c5cff;
+.dashboard-wallet-button:hover {
+  background: #7c4dff;
+
+  transform: translateY(-2px);
+
+  box-shadow: 0 8px 20px rgba(109, 61, 245, 0.3);
 }
 
-@media (max-width: 900px) {
+.dashboard-wallet-button:active {
+  transform: translateY(0);
+}
+
+
+/* ================================
+   COMING SOON MESSAGE
+================================ */
+
+.coming-soon-message {
+  width: fit-content;
+
+  margin: -15px 0 25px;
+
+  padding: 14px 20px;
+
+  background: #111217;
+
+  border: 1px solid #6d3df5;
+  border-radius: 10px;
+
+  color: #ffffff;
+
+  font-size: 15px;
+  font-weight: 600;
+
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+
+  animation: comingSoonIn 0.2s ease;
+}
+
+@keyframes comingSoonIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+
+/* ================================
+   RESPONSIVE
+================================ */
+
+@media (max-width: 1000px) {
   .dashboard-grid {
     grid-template-columns: 1fr;
   }
 
-  .dashboard-title {
-    font-size: 34px;
+  .dashboard-content {
+    padding: 40px 25px 60px;
+  }
+}
+
+@media (max-width: 600px) {
+  .dashboard-header h1 {
+    font-size: 32px;
+  }
+
+  .dashboard-header p {
+    font-size: 17px;
+  }
+
+  .dashboard-card {
+    padding: 25px;
+  }
+
+  .dashboard-card h2 {
+    font-size: 25px;
   }
 }

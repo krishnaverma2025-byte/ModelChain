@@ -1,17 +1,17 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "../supabaseClient";
+import "./Navbar.css";
 
 function Navbar() {
   const [user, setUser] = useState(null);
+  const [showComingSoon, setShowComingSoon] = useState(false);
 
   useEffect(() => {
-    // Get currently logged-in user
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
     });
 
-    // Listen for login/logout changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -24,59 +24,78 @@ function Navbar() {
   }, []);
 
   const handleLogout = async () => {
-    const { error } = await supabase.auth.signOut();
+    await supabase.auth.signOut();
+  };
 
-    if (error) {
-      console.error("Logout error:", error);
-    }
+  const handleConnectWallet = () => {
+    setShowComingSoon(true);
+
+    setTimeout(() => {
+      setShowComingSoon(false);
+    }, 2500);
   };
 
   return (
-    <nav className="navbar">
+    <>
+      <header className="navbar">
 
-      {/* LOGO */}
-      <Link to="/" className="navbar-logo">
-        Mont<span>AI</span>
-      </Link>
+        <Link to="/" className="navbar-logo">
+          MontAI
+        </Link>
 
-      {/* CENTER NAVIGATION */}
-      <div className="navbar-links">
-        <Link to="/">Home</Link>
-        <Link to="/marketplace">Marketplace</Link>
-        <Link to="/upload-model">Upload Model</Link>
-        <Link to="/dashboard">Dashboard</Link>
-      </div>
+        <nav className="navbar-links">
+          <Link to="/">Home</Link>
+          <Link to="/marketplace">Marketplace</Link>
+          <Link to="/upload-model">Upload Model</Link>
+          <Link to="/dashboard">Dashboard</Link>
+        </nav>
 
-      {/* RIGHT SIDE */}
-      <div className="navbar-right">
+        <div className="navbar-right">
 
-        {user ? (
-          <div className="user-section">
+          <button
+            className="navbar-wallet-button"
+            onClick={handleConnectWallet}
+          >
+            ◈ Connect Wallet
+          </button>
 
-            {/* PROFILE */}
-            <Link to="/profile" className="profile-button">
-              {user.email}
-            </Link>
+          {user ? (
+            <div className="user-section">
 
-            {/* LOGOUT */}
-            <button
-              className="logout-button"
-              onClick={handleLogout}
+              <Link
+                to="/profile"
+                className="profile-button"
+              >
+                {user.email}
+              </Link>
+
+              <button
+                className="logout-button"
+                onClick={handleLogout}
+              >
+                Logout
+              </button>
+
+            </div>
+          ) : (
+            <Link
+              to="/login"
+              className="login-button"
             >
-              Logout
-            </button>
+              Login
+            </Link>
+          )}
 
-          </div>
-        ) : (
-          /* LOGIN */
-          <Link to="/login" className="login-button">
-            Login
-          </Link>
-        )}
+        </div>
 
-      </div>
+      </header>
 
-    </nav>
+      {showComingSoon && (
+        <div className="wallet-coming-soon">
+          🚀 Ethereum wallet connection is coming soon!
+        </div>
+      )}
+    </>
   );
 }
 

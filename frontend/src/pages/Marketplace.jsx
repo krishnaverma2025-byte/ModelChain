@@ -4,6 +4,7 @@ import "./Marketplace.css";
 function Marketplace() {
   const models = [
     {
+      id: "vision-ai",
       name: "Vision AI",
       description:
         "Advanced computer vision model for image recognition and analysis.",
@@ -11,6 +12,7 @@ function Marketplace() {
       category: "Computer Vision",
     },
     {
+      id: "textmind",
       name: "TextMind",
       description:
         "Powerful language model designed for intelligent text generation.",
@@ -18,6 +20,7 @@ function Marketplace() {
       category: "Natural Language",
     },
     {
+      id: "predictx",
       name: "PredictX",
       description:
         "Machine learning model for predictive analytics and forecasting.",
@@ -28,23 +31,6 @@ function Marketplace() {
 
   return (
     <div className="marketplace-page">
-
-      <header className="page-navbar">
-        <Link to="/" className="page-logo">
-          MontAI
-        </Link>
-
-        <nav>
-          <Link to="/">Home</Link>
-          <Link to="/marketplace">Marketplace</Link>
-          <Link to="/upload">Upload Model</Link>
-          <Link to="/dashboard">Dashboard</Link>
-        </nav>
-
-        <Link to="/login" className="page-login">
-          Login
-        </Link>
-      </header>
 
       <main className="marketplace-content">
 
@@ -59,8 +45,9 @@ function Marketplace() {
         </p>
 
         <div className="models-grid">
+
           {models.map((model) => (
-            <div className="model-card" key={model.name}>
+            <div className="model-card" key={model.id}>
 
               <div className="model-icon">
                 AI
@@ -75,12 +62,17 @@ function Marketplace() {
                 <span>{model.category}</span>
               </div>
 
-              <button className="model-button">
-                View Model Details →
-              </button>
+              <Link
+                to={`/model/${model.id}`}
+                className="model-button"
+              >
+                <span>View Model Details</span>
+                <span className="button-arrow">→</span>
+              </Link>
 
             </div>
           ))}
+
         </div>
 
       </main>

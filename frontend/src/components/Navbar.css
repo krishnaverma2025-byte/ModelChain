@@ -1,228 +1,234 @@
-/* =========================
+/* ================================
    NAVBAR
-========================= */
+================================ */
 
 .navbar {
   width: 100%;
-  height: 88px;
+  height: 92px;
+  box-sizing: border-box;
 
   display: flex;
   align-items: center;
-  justify-content: space-between;
 
-  padding: 0 64px;
-
-  box-sizing: border-box;
+  padding: 0 60px;
 
   background: #08090d;
-
-  border-bottom: 1px solid #20222b;
+  border-bottom: 1px solid #252831;
 
   position: relative;
-  z-index: 100;
+  z-index: 1000;
 }
 
 
-/* =========================
-   LOGO
-========================= */
+/* LOGO */
 
 .navbar-logo {
   color: #ffffff;
-
   text-decoration: none;
 
-  font-size: 20px;
+  font-size: 32px;
   font-weight: 700;
 
-  letter-spacing: -0.5px;
-
-  transition: 0.2s ease;
-}
-
-.navbar-logo:hover {
-  color: #8b6cff;
+  white-space: nowrap;
 }
 
 
-/* =========================
-   NAVIGATION LINKS
-========================= */
+/* NAVIGATION */
 
 .navbar-links {
   display: flex;
   align-items: center;
+  gap: 58px;
 
-  gap: 42px;
+  margin-left: auto;
+  margin-right: 70px;
 }
 
 .navbar-links a {
-  color: #b8bac5;
-
+  color: #ffffff;
   text-decoration: none;
 
-  font-size: 16px;
+  font-size: 20px;
   font-weight: 500;
 
   transition: color 0.2s ease;
 }
 
 .navbar-links a:hover {
-  color: #ffffff;
+  color: #8b5cf6;
 }
 
 
-/* =========================
-   RIGHT SIDE
-========================= */
+/* RIGHT SIDE */
 
 .navbar-right {
   display: flex;
   align-items: center;
+  gap: 14px;
+
+  white-space: nowrap;
 }
 
 
-/* =========================
-   LOGIN BUTTON
-========================= */
+/* CONNECT WALLET */
+
+.navbar-wallet-button {
+  padding: 14px 20px;
+
+  border: 1px solid #6d3df5;
+  border-radius: 10px;
+
+  background: transparent;
+  color: #ffffff;
+
+  font-size: 15px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition: all 0.2s ease;
+}
+
+.navbar-wallet-button:hover {
+  background: #6d3df5;
+
+  transform: translateY(-2px);
+
+  box-shadow: 0 8px 20px rgba(109, 61, 245, 0.25);
+}
+
+
+/* LOGIN */
 
 .login-button {
   display: flex;
   align-items: center;
   justify-content: center;
 
-  padding: 12px 24px;
+  min-width: 120px;
+  height: 56px;
 
-  background: linear-gradient(
-    135deg,
-    #7545ff,
-    #6845e8
-  );
+  padding: 0 25px;
 
+  box-sizing: border-box;
+
+  background: #6d3df5;
   color: #ffffff;
+
+  border-radius: 18px;
 
   text-decoration: none;
 
-  font-size: 15px;
+  font-size: 18px;
   font-weight: 600;
 
-  border-radius: 10px;
-
-  transition: 0.2s ease;
+  transition: all 0.2s ease;
 }
 
 .login-button:hover {
-  transform: translateY(-1px);
+  background: #7c4dff;
 
-  box-shadow:
-    0 8px 25px rgba(117, 69, 255, 0.3);
+  transform: translateY(-2px);
+
+  box-shadow: 0 8px 20px rgba(109, 61, 245, 0.3);
 }
 
 
-/* =========================
-   USER SECTION
-========================= */
+/* LOGGED-IN USER */
 
 .user-section {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
 }
 
-
-/* =========================
-   PROFILE
-========================= */
-
 .profile-button {
-  color: #b8bac5;
-
+  color: #ffffff;
   text-decoration: none;
 
-  font-size: 14px;
-  font-weight: 500;
-
-  transition: color 0.2s ease;
+  font-size: 16px;
 }
 
 .profile-button:hover {
-  color: #ffffff;
+  color: #8b5cf6;
 }
 
-
-/* =========================
-   LOGOUT
-========================= */
-
 .logout-button {
-  border: none;
+  padding: 12px 18px;
 
-  padding: 10px 18px;
+  border: 1px solid #333640;
+  border-radius: 10px;
 
-  border-radius: 8px;
-
-  background: #20222b;
-
+  background: transparent;
   color: #ffffff;
-
-  font-size: 14px;
-  font-weight: 600;
 
   cursor: pointer;
 
-  transition: 0.2s ease;
+  font-size: 15px;
+  font-weight: 600;
 }
 
 .logout-button:hover {
-  background: #2c2e38;
+  background: #191b22;
 }
 
 
-/* =========================
-   MOBILE
-========================= */
+/* WALLET MESSAGE */
 
-@media (max-width: 900px) {
+.wallet-coming-soon {
+  position: fixed;
 
+  top: 110px;
+  right: 30px;
+
+  z-index: 9999;
+
+  padding: 15px 22px;
+
+  background: #111217;
+  color: #ffffff;
+
+  border: 1px solid #6d3df5;
+  border-radius: 10px;
+
+  font-size: 15px;
+  font-weight: 600;
+
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+
+  animation: walletMessageIn 0.2s ease;
+}
+
+@keyframes walletMessageIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+
+/* RESPONSIVE */
+
+@media (max-width: 1000px) {
   .navbar {
-    padding: 0 25px;
+    padding: 0 30px;
   }
 
   .navbar-links {
-    gap: 20px;
+    gap: 25px;
+    margin-right: 25px;
   }
 
   .navbar-links a {
-    font-size: 14px;
+    font-size: 17px;
   }
 
-}
-
-
-@media (max-width: 700px) {
-
-  .navbar {
-    height: auto;
-
-    min-height: 80px;
-
-    flex-wrap: wrap;
-
-    gap: 20px;
-
-    padding: 20px 25px;
+  .navbar-logo {
+    font-size: 28px;
   }
-
-  .navbar-links {
-    order: 3;
-
-    width: 100%;
-
-    justify-content: center;
-
-    flex-wrap: wrap;
-
-    gap: 18px;
-  }
-
 }

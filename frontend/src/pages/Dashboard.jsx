@@ -1,81 +1,88 @@
-import { Link } from "react-router-dom";
+import { useState } from "react";
 import "./Dashboard.css";
 
 function Dashboard() {
+  const [showComingSoon, setShowComingSoon] = useState(false);
+
+  const handleConnectWallet = () => {
+    setShowComingSoon(true);
+
+    setTimeout(() => {
+      setShowComingSoon(false);
+    }, 2500);
+  };
+
   return (
     <div className="dashboard-page">
-      <div className="dashboard-container">
 
-        <h1 className="dashboard-title">
-          Dashboard
-        </h1>
+      <main className="dashboard-content">
 
-        <p className="dashboard-subtitle">
-          Manage your AI models, licenses, and marketplace activity.
-        </p>
+        {/* HEADER */}
+        <div className="dashboard-header">
+          <div>
+            <div className="section-label">
+              YOUR DASHBOARD
+            </div>
 
+            <h1>Welcome to MontAI</h1>
+
+            <p>
+              Manage your AI models, licenses, and marketplace activity.
+            </p>
+          </div>
+        </div>
+
+        {/* COMING SOON MESSAGE */}
+        {showComingSoon && (
+          <div className="coming-soon-message">
+            🚀 Ethereum wallet connection is coming soon!
+          </div>
+        )}
+
+        {/* DASHBOARD CARDS */}
         <div className="dashboard-grid">
 
           <div className="dashboard-card">
-            <div className="dashboard-stat">0</div>
-            <h3>My Models</h3>
-            <p>
-              AI models you have uploaded to MontAI.
-            </p>
+            <div className="card-number">0</div>
 
-            <Link
-              to="/upload-model"
-              className="dashboard-button"
-            >
-              Upload Model
-            </Link>
+            <h2>Models Listed</h2>
+
+            <p>
+              AI models you have listed on the marketplace.
+            </p>
           </div>
 
           <div className="dashboard-card">
-            <div className="dashboard-stat">0</div>
-            <h3>Licensed Models</h3>
-            <p>
-              Models you have licensed from the marketplace.
-            </p>
+            <div className="card-number">0</div>
 
-            <Link
-              to="/marketplace"
-              className="dashboard-button"
-            >
-              Explore Models
-            </Link>
+            <h2>Licenses Owned</h2>
+
+            <p>
+              AI model licenses you currently own.
+            </p>
           </div>
 
           <div className="dashboard-card">
-            <div className="dashboard-stat">0</div>
-            <h3>Transactions</h3>
+            <div className="card-number">0</div>
+
+            <h2>Transactions</h2>
+
             <p>
               Your marketplace transactions and activity.
             </p>
-          </div>
 
-        </div>
-
-        <div className="dashboard-section">
-
-          <h2>Recent Activity</h2>
-
-          <div className="empty-dashboard">
-            <p>
-              No activity yet.
-            </p>
-
-            <Link
-              to="/marketplace"
-              className="dashboard-button"
+            <button
+              className="dashboard-wallet-button"
+              onClick={handleConnectWallet}
             >
-              Browse Marketplace
-            </Link>
+              ◈ Connect Wallet
+            </button>
           </div>
 
         </div>
 
-      </div>
+      </main>
+
     </div>
   );
 }

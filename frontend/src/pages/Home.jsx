@@ -5,23 +5,6 @@ function Home() {
   return (
     <div className="home-page">
 
-      <header className="navbar">
-        <Link to="/" className="navbar-logo">
-          MontAI
-        </Link>
-
-        <nav className="navbar-links">
-          <Link to="/">Home</Link>
-          <Link to="/marketplace">Marketplace</Link>
-          <Link to="/upload">Upload Model</Link>
-          <Link to="/dashboard">Dashboard</Link>
-        </nav>
-
-        <Link to="/login" className="login-button">
-          Login
-        </Link>
-      </header>
-
       <main className="hero">
 
         <div className="hero-badge">
@@ -43,13 +26,21 @@ function Home() {
         </p>
 
         <div className="hero-actions">
-          <Link to="/marketplace" className="primary-button">
+
+          <Link
+            to="/marketplace"
+            className="primary-button"
+          >
             Explore Models
           </Link>
 
-          <Link to="/upload" className="secondary-button">
+          <Link
+            to="/upload-model"
+            className="secondary-button"
+          >
             List Your Model
           </Link>
+
         </div>
 
       </main>

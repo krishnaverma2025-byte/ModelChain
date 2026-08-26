@@ -1,101 +1,113 @@
-import { Link } from "react-router-dom";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { supabase } from "../supabaseClient";
+import "./Login.css";
 
 function Login() {
+  const navigate = useNavigate();
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+
+    setError("");
+    setLoading(true);
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) {
+      setError(error.message);
+      setLoading(false);
+      return;
+    }
+
+    navigate("/dashboard");
+  };
+
   return (
-    <div style={styles.page}>
-      <div style={styles.box}>
-        <Link to="/" style={styles.logo}>
+    <div className="login-page">
+
+      <div className="login-card">
+
+        <div className="login-logo">
           MontAI
-        </Link>
+        </div>
 
         <h1>Welcome Back</h1>
 
-        <p>Sign in to manage your AI licenses.</p>
+        <p className="login-description">
+          Sign in to manage your AI licenses.
+        </p>
 
-        <label>Email</label>
-        <input type="email" placeholder="you@example.com" />
+        <form
+          className="login-form"
+          onSubmit={handleLogin}
+        >
 
-        <label>Password</label>
-        <input type="password" placeholder="••••••••" />
+          {error && (
+            <div className="login-error">
+              {error}
+            </div>
+          )}
 
-        <button style={styles.button}>
-          Login
-        </button>
+          <div className="login-form-group">
+            <label htmlFor="email">
+              Email
+            </label>
 
-        <Link to="/" style={styles.back}>
+            <input
+              id="email"
+              type="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
+
+          <div className="login-form-group">
+            <label htmlFor="password">
+              Password
+            </label>
+
+            <input
+              id="password"
+              type="password"
+              placeholder="Enter your password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
+
+          <button
+            type="submit"
+            className="login-submit-button"
+            disabled={loading}
+          >
+            {loading ? "Signing in..." : "Login"}
+          </button>
+
+        </form>
+
+        <Link
+          to="/"
+          className="back-home"
+        >
           ← Back to Home
         </Link>
+
       </div>
+
     </div>
   );
 }
-
-const styles = {
-  page: {
-    minHeight: "100vh",
-    background: "#08090d",
-    color: "#fff",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    fontFamily: "Arial, sans-serif",
-  },
-
-  box: {
-    width: "420px",
-    background: "#0d0e14",
-    border: "1px solid #292b35",
-    borderRadius: "20px",
-    padding: "45px",
-    display: "flex",
-    flexDirection: "column",
-    boxSizing: "border-box",
-  },
-
-  logo: {
-    color: "#9b72ff",
-    fontSize: "28px",
-    fontWeight: "800",
-    textDecoration: "none",
-    marginBottom: "35px",
-  },
-
-  h1: {
-    fontSize: "38px",
-  },
-
-  p: {
-    color: "#9da0b4",
-    marginBottom: "30px",
-  },
-
-  input: {
-    background: "#101117",
-    color: "#fff",
-    border: "1px solid #30323d",
-    borderRadius: "10px",
-    padding: "15px",
-    margin: "8px 0 20px",
-    fontSize: "16px",
-  },
-
-  button: {
-    background: "#7040f5",
-    border: "none",
-    color: "#fff",
-    padding: "16px",
-    borderRadius: "10px",
-    fontWeight: "700",
-    fontSize: "16px",
-    cursor: "pointer",
-  },
-
-  back: {
-    color: "#9b72ff",
-    textDecoration: "none",
-    textAlign: "center",
-    marginTop: "25px",
-  },
-};
 
 export default Login;

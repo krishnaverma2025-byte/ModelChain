@@ -1,248 +1,178 @@
 import { Link, useParams } from "react-router-dom";
+import "./Details.css";
 
-const modelData = {
-  "vision-ai": {
-    name: "Vision AI",
-    category: "Computer Vision",
-    price: "0.05 ETH",
-    description:
-      "Advanced computer vision model for image recognition and analysis.",
-    creator: "AI Research Labs",
-  },
-
-  textmind: {
-    name: "TextMind",
-    category: "Natural Language",
-    price: "0.08 ETH",
-    description:
-      "Powerful language model designed for intelligent text generation.",
-    creator: "Neural Systems",
-  },
-
-  predictx: {
-    name: "PredictX",
-    category: "Predictive AI",
-    price: "0.04 ETH",
-    description:
-      "Machine learning model for predictive analytics and forecasting.",
-    creator: "Predictive Labs",
-  },
-};
-
-function ModelDetails() {
+function Details() {
   const { id } = useParams();
 
-  const model = modelData[id];
+  const models = {
+    "vision-ai": {
+      name: "Vision AI",
+      category: "Computer Vision",
+      description:
+        "Advanced computer vision model for image recognition and analysis.",
+      about:
+        "Vision AI is a computer vision model designed to analyze images and identify objects, patterns, and visual information. It can be used for image recognition, classification, and other computer vision applications.",
+      price: "0.05 ETH",
+      creator: "MontAI Developer",
+      version: "1.0.0",
+      license: "Commercial AI License",
+    },
+
+    textmind: {
+      name: "TextMind",
+      category: "Natural Language",
+      description:
+        "Powerful language model designed for intelligent text generation.",
+      about:
+        "TextMind is a natural language model designed for intelligent text generation, language understanding, summarization, and other text-based AI applications.",
+      price: "0.08 ETH",
+      creator: "MontAI Developer",
+      version: "1.0.0",
+      license: "Commercial AI License",
+    },
+
+    predictx: {
+      name: "PredictX",
+      category: "Predictive AI",
+      description:
+        "Machine learning model for predictive analytics and forecasting.",
+      about:
+        "PredictX is a machine learning model designed for predictive analytics and forecasting. It can analyze historical data and generate useful predictions for different applications.",
+      price: "0.04 ETH",
+      creator: "MontAI Developer",
+      version: "1.0.0",
+      license: "Commercial AI License",
+    },
+  };
+
+  const model = models[id];
 
   if (!model) {
     return (
-      <div style={styles.page}>
-        <h1>Model Not Found</h1>
+      <div className="details-page">
+        <div className="not-found">
+          <h1>Model Not Found</h1>
 
-        <Link to="/marketplace" style={styles.button}>
-          Back to Marketplace
-        </Link>
+          <p>
+            The model you are looking for does not exist.
+          </p>
+
+          <Link
+            to="/marketplace"
+            className="back-button"
+          >
+            ← Back to Marketplace
+          </Link>
+        </div>
       </div>
     );
   }
 
   return (
-    <div style={styles.page}>
-      <header style={styles.header}>
-        <Link to="/" style={styles.logo}>
-          MontAI
-        </Link>
+    <div className="details-page">
 
-        <nav style={styles.nav}>
-          <Link to="/" style={styles.navLink}>
-            Home
-          </Link>
-          <Link to="/marketplace" style={styles.navLink}>
-            Marketplace
-          </Link>
-          <Link to="/upload" style={styles.navLink}>
-            Upload Model
-          </Link>
-          <Link to="/dashboard" style={styles.navLink}>
-            Dashboard
-          </Link>
-        </nav>
+      <main className="details-content">
 
-        <Link to="/login" style={styles.login}>
-          Login
-        </Link>
-      </header>
-
-      <main style={styles.container}>
-        <Link to="/marketplace" style={styles.back}>
+        <Link
+          to="/marketplace"
+          className="back-link"
+        >
           ← Back to Marketplace
         </Link>
 
-        <div style={styles.content}>
-          <div style={styles.icon}>AI</div>
+        {/* MODEL HEADER */}
+        <div className="details-header">
 
-          <div style={styles.badge}>{model.category}</div>
-
-          <h1 style={styles.title}>{model.name}</h1>
-
-          <p style={styles.description}>{model.description}</p>
-
-          <div style={styles.creator}>
-            <span>Created by</span>
-            <strong>{model.creator}</strong>
+          <div className="details-icon">
+            AI
           </div>
 
-          <div style={styles.purchaseBox}>
-            <div>
-              <span style={styles.priceLabel}>License Price</span>
-              <div style={styles.price}>{model.price}</div>
+          <div className="details-title">
+
+            <div className="details-category">
+              {model.category}
             </div>
 
-            <button style={styles.buyButton}>
+            <h1>{model.name}</h1>
+
+            <p>{model.description}</p>
+
+          </div>
+
+        </div>
+
+        {/* MAIN CONTENT */}
+        <div className="details-grid">
+
+          <div className="details-left">
+
+            {/* ABOUT */}
+            <section className="details-card">
+
+              <h2>About this model</h2>
+
+              <p>
+                {model.about}
+              </p>
+
+            </section>
+
+            {/* INFORMATION */}
+            <section className="details-card">
+
+              <h2>Model Information</h2>
+
+              <div className="info-row">
+                <span>Creator</span>
+                <strong>{model.creator}</strong>
+              </div>
+
+              <div className="info-row">
+                <span>Version</span>
+                <strong>{model.version}</strong>
+              </div>
+
+              <div className="info-row">
+                <span>Category</span>
+                <strong>{model.category}</strong>
+              </div>
+
+              <div className="info-row">
+                <span>License</span>
+                <strong>{model.license}</strong>
+              </div>
+
+            </section>
+
+          </div>
+
+          {/* PRICE CARD */}
+          <aside className="license-card">
+
+            <div className="license-label">
+              LICENSE PRICE
+            </div>
+
+            <div className="license-price">
+              {model.price}
+            </div>
+
+            <p>
+              Purchase a license to use this AI model.
+            </p>
+
+            <button className="license-button">
               License Model
             </button>
-          </div>
+
+          </aside>
+
         </div>
+
       </main>
+
     </div>
   );
 }
 
-const styles = {
-  page: {
-    minHeight: "100vh",
-    background: "#08090d",
-    color: "#fff",
-    fontFamily: "Arial, sans-serif",
-  },
-
-  header: {
-    height: "88px",
-    borderBottom: "1px solid #24252d",
-    display: "flex",
-    alignItems: "center",
-    padding: "0 5%",
-  },
-
-  logo: {
-    color: "#fff",
-    textDecoration: "none",
-    fontSize: "26px",
-    fontWeight: "800",
-  },
-
-  nav: {
-    display: "flex",
-    gap: "45px",
-    margin: "0 auto",
-  },
-
-  navLink: {
-    color: "#c8c9d4",
-    textDecoration: "none",
-  },
-
-  login: {
-    background: "#7040f5",
-    color: "#fff",
-    padding: "15px 28px",
-    borderRadius: "12px",
-    textDecoration: "none",
-    fontWeight: "700",
-  },
-
-  container: {
-    width: "75%",
-    maxWidth: "1000px",
-    margin: "0 auto",
-    padding: "70px 0",
-  },
-
-  back: {
-    color: "#9b72ff",
-    textDecoration: "none",
-  },
-
-  content: {
-    marginTop: "50px",
-    background: "#0d0e14",
-    border: "1px solid #292b35",
-    borderRadius: "22px",
-    padding: "55px",
-  },
-
-  icon: {
-    width: "90px",
-    height: "90px",
-    background: "#6840ed",
-    borderRadius: "22px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontSize: "30px",
-    fontWeight: "800",
-  },
-
-  badge: {
-    color: "#9b72ff",
-    marginTop: "35px",
-    fontWeight: "700",
-  },
-
-  title: {
-    fontSize: "60px",
-    margin: "15px 0",
-  },
-
-  description: {
-    color: "#9da0b4",
-    fontSize: "20px",
-    lineHeight: "1.7",
-    maxWidth: "750px",
-  },
-
-  creator: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "8px",
-    marginTop: "35px",
-    color: "#9da0b4",
-  },
-
-  purchaseBox: {
-    marginTop: "50px",
-    padding: "30px",
-    border: "1px solid #30323d",
-    borderRadius: "15px",
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-
-  priceLabel: {
-    color: "#9da0b4",
-  },
-
-  price: {
-    fontSize: "28px",
-    fontWeight: "800",
-    marginTop: "8px",
-  },
-
-  buyButton: {
-    background: "#7040f5",
-    color: "#fff",
-    border: "none",
-    borderRadius: "12px",
-    padding: "17px 30px",
-    fontSize: "16px",
-    fontWeight: "700",
-    cursor: "pointer",
-  },
-
-  button: {
-    color: "#fff",
-  },
-};
-
-export default ModelDetails;
+export default Details;

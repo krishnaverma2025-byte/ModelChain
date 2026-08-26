@@ -1,26 +1,8 @@
-import { Link } from "react-router-dom";
 import "./UploadModel.css";
 
 function UploadModel() {
   return (
     <div className="upload-page">
-
-      <header className="page-navbar">
-        <Link to="/" className="page-logo">
-          MontAI
-        </Link>
-
-        <nav>
-          <Link to="/">Home</Link>
-          <Link to="/marketplace">Marketplace</Link>
-          <Link to="/upload">Upload Model</Link>
-          <Link to="/dashboard">Dashboard</Link>
-        </nav>
-
-        <Link to="/login" className="page-login">
-          Login
-        </Link>
-      </header>
 
       <main className="upload-content">
 

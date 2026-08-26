@@ -128,14 +128,55 @@
 }
 
 .model-button {
-  height: 80px;
-  border: 1px solid #30323d;
+  width: 100%;
+  height: 64px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+
+  margin-top: 28px;
+
+  border: 1px solid #34343f;
   border-radius: 14px;
-  background: transparent;
+
+  background: #0d0d13;
+
   color: white;
+  text-decoration: none;
+
   font-size: 17px;
   font-weight: 700;
+
   cursor: pointer;
+
+  transition: all 0.25s ease;
+}
+
+.button-arrow {
+  font-size: 23px;
+  transition: transform 0.25s ease;
+}
+
+.model-button:hover {
+  transform: translateY(-3px);
+
+  border-color: #7447ff;
+
+  background: #15111f;
+
+  box-shadow:
+    0 8px 25px rgba(108, 63, 255, 0.25),
+    0 0 20px rgba(108, 63, 255, 0.10);
+}
+
+.model-button:hover .button-arrow {
+  transform: translateX(7px);
+}
+
+.model-button:active {
+  transform: translateY(-1px) scale(0.98);
 }
 
 .model-button:hover {
