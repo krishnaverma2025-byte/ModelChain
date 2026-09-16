@@ -1,21 +1,62 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
 import "./Navbar.css";
 
 function Navbar() {
+  const navigate = useNavigate();
+
   const [user, setUser] = useState(null);
-  const [showComingSoon, setShowComingSoon] = useState(false);
+  const [profile, setProfile] = useState(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  // Fetch profile from Supabase
+  const fetchProfile = async (currentUser) => {
+    if (!currentUser) {
+      setProfile(null);
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("full_name, avatar_url")
+      .eq("id", currentUser.id)
+      .single();
+
+    if (error) {
+      console.error("Error fetching profile:", error);
+      setProfile(null);
+      return;
+    }
+
+    setProfile(data);
+  };
 
   useEffect(() => {
+    // Get current logged-in user
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
+      const currentUser = session?.user ?? null;
+
+      setUser(currentUser);
+
+      if (currentUser) {
+        fetchProfile(currentUser);
+      }
     });
 
+    // Listen for login/logout
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
+      const currentUser = session?.user ?? null;
+
+      setUser(currentUser);
+
+      if (currentUser) {
+        fetchProfile(currentUser);
+      } else {
+        setProfile(null);
+      }
     });
 
     return () => {
@@ -23,79 +64,182 @@ function Navbar() {
     };
   }, []);
 
+  // Logout
   const handleLogout = async () => {
     await supabase.auth.signOut();
+
+    setUser(null);
+    setProfile(null);
+    setMenuOpen(false);
+
+    navigate("/");
   };
 
-  const handleConnectWallet = () => {
-    setShowComingSoon(true);
+  // Reset password
+  const handleResetPassword = async () => {
+    if (!user?.email) return;
 
-    setTimeout(() => {
-      setShowComingSoon(false);
-    }, 2500);
+    const { error } =
+      await supabase.auth.resetPasswordForEmail(user.email, {
+        redirectTo: `${window.location.origin}/login`,
+      });
+
+    if (error) {
+      alert(error.message);
+    } else {
+      alert("Password reset link has been sent to your email.");
+    }
+
+    setMenuOpen(false);
   };
+
+  // Get user's name
+  const fullName =
+    profile?.full_name ||
+    user?.user_metadata?.full_name ||
+    "User";
+
+  // Get profile picture
+  const avatarUrl =
+    profile?.avatar_url ||
+    `https://ui-avatars.com/api/?name=${encodeURIComponent(
+      fullName
+    )}&background=6d3df5&color=fff`;
 
   return (
-    <>
-      <header className="navbar">
+    <header className="navbar">
 
-        <Link to="/" className="navbar-logo">
-          MontAI
-        </Link>
+      {/* LOGO */}
+      <Link to="/" className="navbar-logo">
+        MontAI
+      </Link>
 
-        <nav className="navbar-links">
-          <Link to="/">Home</Link>
-          <Link to="/marketplace">Marketplace</Link>
-          <Link to="/upload-model">Upload Model</Link>
-          <Link to="/dashboard">Dashboard</Link>
-        </nav>
 
-        <div className="navbar-right">
+      {/* NAVIGATION */}
+      <nav className="navbar-links">
+        <Link to="/">Home</Link>
+        <Link to="/marketplace">Marketplace</Link>
+        <Link to="/upload-model">Upload Model</Link>
+        <Link to="/dashboard">Dashboard</Link>
+      </nav>
 
-          <button
-            className="navbar-wallet-button"
-            onClick={handleConnectWallet}
-          >
-            ◈ Connect Wallet
-          </button>
 
-          {user ? (
-            <div className="user-section">
+      {/* RIGHT SIDE */}
+      <div className="navbar-right">
 
-              <Link
-                to="/profile"
-                className="profile-button"
-              >
-                {user.email}
-              </Link>
+        {user ? (
 
-              <button
-                className="logout-button"
-                onClick={handleLogout}
-              >
-                Logout
-              </button>
+          <div className="profile-menu-wrapper">
 
-            </div>
-          ) : (
-            <Link
-              to="/login"
-              className="login-button"
+            {/* PROFILE BUTTON */}
+            <button
+              className="profile-menu-button"
+              onClick={() => setMenuOpen(!menuOpen)}
             >
-              Login
-            </Link>
-          )}
 
-        </div>
+              <img
+                src={avatarUrl}
+                alt="Profile"
+                className="navbar-avatar"
+              />
 
-      </header>
+              <span className="navbar-user-name">
+                {fullName}
+              </span>
 
-      {showComingSoon && (
-        <div className="wallet-coming-soon">
-          🚀 Ethereum wallet connection is coming soon!
-        </div>
-      )}
-    </>
+              <span className="dropdown-arrow">
+                {menuOpen ? "▲" : "▼"}
+              </span>
+
+            </button>
+
+
+            {/* PROFILE DROPDOWN */}
+            {menuOpen && (
+
+              <div className="profile-dropdown">
+
+                {/* PROFILE HEADER */}
+                <div className="dropdown-user">
+
+                  <img
+                    src={avatarUrl}
+                    alt="Profile"
+                    className="dropdown-avatar"
+                  />
+
+                  <div>
+                    <strong>{fullName}</strong>
+                  </div>
+
+                </div>
+
+
+                {/* DIVIDER */}
+                <div className="dropdown-divider" />
+
+
+                {/* VIEW PROFILE */}
+                <button
+                  onClick={() => {
+                    navigate("/profile");
+                    setMenuOpen(false);
+                  }}
+                >
+                  👤 View Profile
+                </button>
+
+
+                {/* EDIT PROFILE */}
+                <button
+                  onClick={() => {
+                    navigate("/profile");
+                    setMenuOpen(false);
+                  }}
+                >
+                  ✏️ Edit Profile
+                </button>
+
+
+                {/* RESET PASSWORD */}
+                <button onClick={handleResetPassword}>
+                  🔒 Reset Password
+                </button>
+
+
+                {/* DIVIDER */}
+                <div className="dropdown-divider" />
+
+
+                {/* LOGOUT */}
+                <button
+                  className="logout-menu-button"
+                  onClick={handleLogout}
+                >
+                  🚪 Logout
+                </button>
+
+              </div>
+
+            )}
+
+          </div>
+
+        ) : (
+
+          /* LOGIN */
+          <Link
+            to="/login"
+            className="login-button"
+          >
+            Login
+          </Link>
+
+        )}
+
+      </div>
+
+    </header>
   );
 }
 

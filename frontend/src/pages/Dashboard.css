@@ -1,228 +1,274 @@
-/* ================================
-   DASHBOARD PAGE
-================================ */
-
 .dashboard-page {
-  min-height: calc(100vh - 92px);
-
+  min-height: 100vh;
   background: #08090d;
-  color: #ffffff;
-
-  box-sizing: border-box;
+  color: white;
 }
-
-
-/* MAIN CONTENT */
 
 .dashboard-content {
-  width: 100%;
-  max-width: 1500px;
-
+  max-width: 1400px;
   margin: 0 auto;
-
-  padding: 55px 36px 70px;
-
-  box-sizing: border-box;
-}
-
-
-/* HEADER */
-
-.dashboard-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-
-  margin-bottom: 40px;
+  padding: 70px 60px;
 }
 
 .section-label {
-  color: #9b6cff;
-
-  font-size: 19px;
+  color: #9b5cff;
+  font-size: 24px;
   font-weight: 700;
-
-  letter-spacing: 2px;
-
-  margin-bottom: 32px;
+  letter-spacing: 3px;
+  margin-bottom: 35px;
 }
 
 .dashboard-header h1 {
-  margin: 0 0 22px;
-
-  color: #ffffff;
-
-  font-size: 40px;
-  font-weight: 700;
+  font-size: 52px;
+  margin: 0 0 25px;
 }
 
 .dashboard-header p {
-  margin: 0;
-
-  color: #9fb1c9;
-
-  font-size: 20px;
-  line-height: 1.6;
+  color: #91b5e2;
+  font-size: 25px;
+  margin-bottom: 60px;
 }
-
-
-/* DASHBOARD GRID */
 
 .dashboard-grid {
   display: grid;
-
   grid-template-columns: repeat(3, 1fr);
-
-  gap: 30px;
-
-  width: 100%;
+  gap: 36px;
 }
-
-
-/* DASHBOARD CARDS */
 
 .dashboard-card {
-  min-height: 250px;
-
-  padding: 32px;
-
+  background: #101116;
+  border: 1px solid #30343f;
+  border-radius: 22px;
+  padding: 40px;
+  min-height: 330px;
   box-sizing: border-box;
-
-  background: #111217;
-
-  border: 1px solid #292d37;
-  border-radius: 18px;
-
-  transition:
-    transform 0.2s ease,
-    border-color 0.2s ease,
-    box-shadow 0.2s ease;
 }
-
-.dashboard-card:hover {
-  transform: translateY(-3px);
-
-  border-color: #444052;
-
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.25);
-}
-
-
-/* NUMBER */
 
 .card-number {
-  margin-bottom: 25px;
-
-  color: #ffffff;
-
-  font-size: 22px;
-  font-weight: 500;
+  font-size: 30px;
+  margin-bottom: 30px;
 }
-
-
-/* CARD HEADING */
 
 .dashboard-card h2 {
-  margin: 0 0 20px;
-
-  color: #ffffff;
-
-  font-size: 30px;
-  font-weight: 700;
+  font-size: 38px;
+  margin: 0 0 25px;
 }
-
-
-/* CARD DESCRIPTION */
 
 .dashboard-card p {
-  margin: 0;
-
-  color: #91a5c0;
-
-  font-size: 19px;
-  line-height: 1.55;
+  color: #91b5e2;
+  font-size: 22px;
+  line-height: 1.5;
 }
 
-
-/* ================================
-   CONNECT WALLET BUTTON
-   UNDER TRANSACTIONS
-================================ */
-
 .dashboard-wallet-button {
-  margin-top: 28px;
-
-  padding: 13px 22px;
-
-  border: 1px solid #6d3df5;
-  border-radius: 10px;
-
-  background: #6d3df5;
-  color: #ffffff;
-
-  font-size: 16px;
-  font-weight: 600;
-
+  margin-top: 25px;
+  background: #713cff;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  padding: 18px 28px;
+  font-size: 20px;
+  font-weight: 700;
   cursor: pointer;
-
-  transition: all 0.2s ease;
 }
 
 .dashboard-wallet-button:hover {
-  background: #7c4dff;
-
-  transform: translateY(-2px);
-
-  box-shadow: 0 8px 20px rgba(109, 61, 245, 0.3);
+  background: #814fff;
 }
 
-.dashboard-wallet-button:active {
-  transform: translateY(0);
+/* VIEW MODELS */
+
+.view-models-button {
+  margin-top: 20px;
+  padding: 12px 18px;
+  border: 1px solid #713cff;
+  background: transparent;
+  color: #b57aff;
+  border-radius: 9px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
 }
 
+.view-models-button:hover {
+  background: #713cff;
+  color: white;
+}
 
-/* ================================
-   COMING SOON MESSAGE
-================================ */
+/* MODEL LIST */
+
+.my-models-list {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.my-model-item {
+  background: #171920;
+  border: 1px solid #30343f;
+  border-radius: 12px;
+  padding: 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+}
+
+.my-model-item strong {
+  display: block;
+  font-size: 18px;
+  margin-bottom: 6px;
+}
+
+.my-model-item span {
+  display: block;
+  color: #91b5e2;
+  font-size: 14px;
+}
+
+.edit-model-button {
+  background: #713cff;
+  color: white;
+  border: none;
+  padding: 9px 15px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.edit-model-button:hover {
+  background: #8757ff;
+}
+
+/* EDIT OVERLAY */
+
+.edit-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  padding: 30px;
+}
+
+.edit-modal {
+  position: relative;
+  width: 600px;
+  max-width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  background: #101116;
+  border: 1px solid #353946;
+  border-radius: 20px;
+  padding: 40px;
+  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.6);
+}
+
+.edit-modal .section-label {
+  margin-bottom: 15px;
+  font-size: 18px;
+}
+
+.edit-modal h2 {
+  font-size: 32px;
+  margin: 0 0 30px;
+}
+
+.close-edit-button {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1px solid #383b46;
+  background: #171920;
+  color: white;
+  font-size: 24px;
+  cursor: pointer;
+}
+
+.edit-form-group {
+  margin-bottom: 22px;
+}
+
+.edit-form-group label {
+  display: block;
+  margin-bottom: 9px;
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.edit-form-group input,
+.edit-form-group textarea,
+.edit-form-group select {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 15px;
+  background: #08090d;
+  color: white;
+  border: 1px solid #383c48;
+  border-radius: 10px;
+  font-size: 16px;
+  outline: none;
+}
+
+.edit-form-group textarea {
+  resize: vertical;
+}
+
+.edit-form-group input:focus,
+.edit-form-group textarea:focus,
+.edit-form-group select:focus {
+  border-color: #713cff;
+}
+
+.edit-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 15px;
+  margin-top: 30px;
+}
+
+.cancel-edit-button,
+.save-edit-button {
+  padding: 13px 22px;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cancel-edit-button {
+  background: transparent;
+  color: #aaa;
+  border: 1px solid #444;
+}
+
+.save-edit-button {
+  background: #713cff;
+  color: white;
+  border: none;
+}
+
+.save-edit-button:hover {
+  background: #8757ff;
+}
 
 .coming-soon-message {
-  width: fit-content;
-
-  margin: -15px 0 25px;
-
-  padding: 14px 20px;
-
-  background: #111217;
-
-  border: 1px solid #6d3df5;
+  position: fixed;
+  top: 100px;
+  right: 30px;
+  background: #171920;
+  border: 1px solid #713cff;
+  color: white;
+  padding: 15px 22px;
   border-radius: 10px;
-
-  color: #ffffff;
-
-  font-size: 15px;
-  font-weight: 600;
-
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
-
-  animation: comingSoonIn 0.2s ease;
+  z-index: 10000;
 }
-
-@keyframes comingSoonIn {
-  from {
-    opacity: 0;
-    transform: translateY(-8px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-
-/* ================================
-   RESPONSIVE
-================================ */
 
 @media (max-width: 1000px) {
   .dashboard-grid {
@@ -230,24 +276,11 @@
   }
 
   .dashboard-content {
-    padding: 40px 25px 60px;
+    padding: 40px 25px;
   }
-}
 
-@media (max-width: 600px) {
   .dashboard-header h1 {
-    font-size: 32px;
+    font-size: 40px;
   }
-
-  .dashboard-header p {
-    font-size: 17px;
-  }
-
-  .dashboard-card {
-    padding: 25px;
-  }
-
-  .dashboard-card h2 {
-    font-size: 25px;
-  }
+  
 }

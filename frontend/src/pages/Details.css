@@ -1,335 +1,339 @@
+/* ================================
+   MODEL DETAILS PAGE
+================================ */
+
 .details-page {
   min-height: 100vh;
-  background: #08080c;
+  background: #08090d;
   color: #ffffff;
+  padding: 70px 5%;
+  box-sizing: border-box;
 }
 
 .details-content {
-  width: 82%;
-  max-width: 1320px;
+  width: 100%;
+  max-width: 1250px;
   margin: 0 auto;
-  padding: 30px 0 80px;
 }
 
-/* BACK LINK */
+/* Section label */
 
-.back-link {
-  display: inline-block;
-  margin-bottom: 40px;
-
-  color: #9b7cff;
-  text-decoration: none;
-
-  font-size: 16px;
-  transition: color 0.2s ease;
+.section-label {
+  color: #a855f7;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  margin-bottom: 45px;
 }
 
-.back-link:hover {
-  color: #b8a2ff;
+/* Main heading */
+
+.details-content h1 {
+  font-size: 58px;
+  line-height: 1.1;
+  margin: 0 0 25px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+/* Description */
+
+.details-description {
+  font-size: 25px;
+  line-height: 1.6;
+  color: #91b7e5;
+  margin: 0 0 50px;
 }
 
 
-/* MODEL HEADER */
+/* ================================
+   DETAILS CARD
+================================ */
 
-.details-header {
+.details-card {
+  width: 100%;
+  min-height: 490px;
+  background: #101116;
+  border: 1px solid #30333e;
+  border-radius: 28px;
+  padding: 52px;
+  box-sizing: border-box;
+
   display: flex;
-  align-items: center;
-  gap: 32px;
-  margin-bottom: 60px;
+  flex-direction: column;
+
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.35);
 }
+
+
+/* ================================
+   AI ICON
+================================ */
 
 .details-icon {
-  width: 122px;
-  height: 122px;
+  width: 188px;
+  height: 188px;
 
   display: flex;
   align-items: center;
   justify-content: center;
 
-  border-radius: 28px;
-
   background: linear-gradient(
-    135deg,
-    #6335ed,
-    #7545ff
+    145deg,
+    #6937f5,
+    #7137f2
   );
 
-  font-size: 42px;
-  font-weight: 800;
+  border-radius: 32px;
+
+  font-size: 68px;
+  font-weight: 700;
+  color: white;
 
   box-shadow:
-    0 15px 35px rgba(108, 63, 255, 0.25);
-}
+    0 20px 45px rgba(105, 55, 245, 0.25);
 
-.details-category {
-  margin-bottom: 12px;
-
-  color: #a786ff;
-
-  font-size: 15px;
-  font-weight: 700;
-  letter-spacing: 2px;
-}
-
-.details-title h1 {
-  margin: 0 0 15px;
-
-  font-size: 58px;
-  line-height: 1.1;
-}
-
-.details-title p {
-  margin: 0;
-
-  color: #9da3b4;
-
-  font-size: 20px;
+  margin-bottom: 45px;
 }
 
 
-/* CONTENT GRID */
+/* ================================
+   MODEL INFORMATION
+================================ */
 
-.details-grid {
+.details-info {
   display: grid;
-  grid-template-columns: 1fr 390px;
-  gap: 44px;
-  align-items: start;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 40px;
+
+  width: 100%;
+  margin-bottom: 42px;
 }
 
-
-/* LEFT SIDE */
-
-.details-left {
+.detail-item {
   display: flex;
   flex-direction: column;
-  gap: 28px;
+  gap: 12px;
 }
 
-.details-card {
-  padding: 34px;
-
-  border: 1px solid #292a34;
-  border-radius: 20px;
-
-  background: #0d0e14;
+.detail-item span {
+  color: #8eb5e4;
+  font-size: 18px;
+  font-weight: 400;
 }
 
-.details-card h2 {
-  margin: 0 0 24px;
-
-  font-size: 27px;
-}
-
-.details-card p {
-  margin: 0;
-
-  color: #9da3b4;
-
-  font-size: 17px;
-  line-height: 1.9;
-}
-
-
-/* INFORMATION ROWS */
-
-.info-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-
-  padding: 20px 0;
-
-  border-bottom: 1px solid #292a34;
-}
-
-.info-row:last-child {
-  border-bottom: none;
-}
-
-.info-row span {
-  color: #8f96aa;
-  font-size: 16px;
-}
-
-.info-row strong {
+.detail-item strong {
   color: #ffffff;
-  font-size: 16px;
-}
-
-
-/* LICENSE CARD */
-
-.license-card {
-  padding: 36px;
-
-  border: 1px solid #7447ff;
-  border-radius: 20px;
-
-  background: #0d0e14;
-
-  box-shadow:
-    0 15px 45px rgba(108, 63, 255, 0.12);
-
-  position: sticky;
-  top: 30px;
-}
-
-.license-label {
-  margin-bottom: 24px;
-
-  color: #a9b0c2;
-
-  font-size: 14px;
+  font-size: 25px;
   font-weight: 700;
-  letter-spacing: 2px;
-}
-
-.license-price {
-  margin-bottom: 24px;
-
-  color: #ffffff;
-
-  font-size: 44px;
-  font-weight: 800;
-}
-
-.license-card p {
-  margin: 0 0 36px;
-
-  color: #9da3b4;
-
-  font-size: 17px;
-  line-height: 1.6;
+  line-height: 1.3;
 }
 
 
-/* LICENSE BUTTON */
+/* ================================
+   LICENSE BUTTON
+================================ */
 
 .license-button {
-  width: 100%;
-  height: 58px;
+  width: 270px;
+  min-height: 64px;
 
   border: none;
-  border-radius: 12px;
+  border-radius: 15px;
 
-  background: linear-gradient(
-    135deg,
-    #6937f2,
-    #7545ff
-  );
-
+  background: #7137f5;
   color: #ffffff;
 
-  font-size: 17px;
+  font-size: 20px;
   font-weight: 700;
 
   cursor: pointer;
 
   transition:
-    transform 0.25s ease,
-    box-shadow 0.25s ease,
-    background 0.25s ease;
+    transform 0.2s ease,
+    background 0.2s ease,
+    box-shadow 0.2s ease;
+
+  margin-top: auto;
 }
 
 .license-button:hover {
-  transform: translateY(-3px);
-
-  background: linear-gradient(
-    135deg,
-    #7545ff,
-    #865cff
-  );
+  background: #824cff;
+  transform: translateY(-2px);
 
   box-shadow:
-    0 10px 30px rgba(108, 63, 255, 0.35),
-    0 0 20px rgba(108, 63, 255, 0.15);
+    0 12px 30px rgba(113, 55, 245, 0.35);
 }
 
 .license-button:active {
-  transform: translateY(-1px) scale(0.98);
+  transform: translateY(0);
 }
 
 
-/* NOT FOUND */
+/* ================================
+   BACK TO MARKETPLACE
+================================ */
 
-.not-found {
-  width: 82%;
-  max-width: 900px;
-  margin: 0 auto;
-  padding-top: 80px;
+.back-link {
+  display: inline-block;
+
+  margin-top: 35px;
+
+  color: #a855f7;
+  text-decoration: none;
+
+  font-size: 21px;
+  font-weight: 500;
+
+  transition:
+    color 0.2s ease,
+    transform 0.2s ease;
 }
 
-.not-found h1 {
-  font-size: 42px;
-  margin-bottom: 20px;
+.back-link:hover {
+  color: #c084fc;
+  transform: translateX(-4px);
 }
 
-.not-found p {
-  color: #9da3b4;
-  font-size: 18px;
-  margin-bottom: 40px;
+
+/* ================================
+   LOADING / NOT FOUND
+================================ */
+
+.details-content > p {
+  color: #91b7e5;
+  font-size: 20px;
 }
 
 .back-button {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
 
-  padding: 16px 25px;
+  padding: 16px 28px;
 
-  border-radius: 12px;
-
-  background: #7040f5;
-
+  background: #7137f5;
   color: white;
-  text-decoration: none;
 
+  border-radius: 14px;
+
+  text-decoration: none;
+  font-size: 18px;
   font-weight: 700;
 
-  transition: all 0.25s ease;
+  transition: 0.2s ease;
 }
 
 .back-button:hover {
+  background: #824cff;
   transform: translateY(-2px);
-
-  background: #8155ff;
-
-  box-shadow:
-    0 8px 25px rgba(108, 63, 255, 0.3);
 }
 
 
-/* RESPONSIVE */
+/* ================================
+   RESPONSIVE
+================================ */
 
 @media (max-width: 900px) {
-  .details-grid {
+
+  .details-page {
+    padding: 50px 25px;
+  }
+
+  .details-content h1 {
+    font-size: 46px;
+  }
+
+  .details-description {
+    font-size: 21px;
+  }
+
+  .details-card {
+    padding: 35px;
+  }
+
+  .details-info {
     grid-template-columns: 1fr;
-  }
-
-  .license-card {
-    position: static;
-  }
-
-  .details-title h1 {
-    font-size: 42px;
+    gap: 28px;
   }
 }
 
+
 @media (max-width: 600px) {
-  .details-content {
-    width: 90%;
+
+  .details-page {
+    padding: 35px 18px;
   }
 
-  .details-header {
-    flex-direction: column;
-    align-items: flex-start;
+  .section-label {
+    font-size: 18px;
+    margin-bottom: 30px;
+  }
+
+  .details-content h1 {
+    font-size: 38px;
+  }
+
+  .details-description {
+    font-size: 18px;
+  }
+
+  .details-card {
+    padding: 25px;
+    border-radius: 20px;
   }
 
   .details-icon {
-    width: 100px;
-    height: 100px;
+    width: 140px;
+    height: 140px;
+    font-size: 52px;
+    border-radius: 24px;
   }
 
-  .details-title h1 {
-    font-size: 36px;
+  .detail-item strong {
+    font-size: 21px;
   }
+
+  .license-button {
+    width: 100%;
+  }
+
+  .model-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.delete-model-button {
+  padding: 8px 14px;
+  border: 1px solid #ff4d4d;
+  border-radius: 8px;
+  background: transparent;
+  color: #ff4d4d;
+  cursor: pointer;
+  font-size: 14px;
+  transition: 0.2s ease;
+}
+
+.delete-model-button:hover {
+  background: #ff4d4d;
+  color: white;
+}
+
+.delete-confirm-button {
+  padding: 10px 18px;
+  border: none;
+  border-radius: 8px;
+  background: #ff4d4d;
+  color: white;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: 0.2s ease;
+}
+
+.delete-confirm-button:hover {
+  background: #e63939;
+}
 }

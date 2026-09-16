@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
-import "./Login.css";
+import "./Signup.css";
 
-function Login() {
+function Signup() {
   const navigate = useNavigate();
 
   const [email, setEmail] = useState("");
@@ -11,13 +11,13 @@ function Login() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
-  const handleLogin = async (e) => {
+  const handleSignup = async (e) => {
     e.preventDefault();
 
     setLoading(true);
     setMessage("");
 
-    const { error } = await supabase.auth.signInWithPassword({
+    const { error } = await supabase.auth.signUp({
       email,
       password,
     });
@@ -28,17 +28,18 @@ function Login() {
       return;
     }
 
-    navigate("/");
+    setMessage("Account created successfully! Check your email.");
+    setLoading(false);
   };
 
-  const handleGoogleLogin = async () => {
+  const handleGoogleSignup = async () => {
     setLoading(true);
     setMessage("");
 
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/`,
+        redirectTo: window.location.origin,
       },
     });
 
@@ -49,22 +50,22 @@ function Login() {
   };
 
   return (
-    <div className="login-page">
-      <div className="login-card">
+    <div className="signup-page">
+      <div className="signup-card">
 
-        <div className="login-logo">
+        <div className="signup-logo">
           MontAI
         </div>
 
-        <h1>Welcome Back</h1>
+        <h1>Create Account</h1>
 
-        <p className="login-subtitle">
-          Sign in to manage your AI licenses.
+        <p className="signup-subtitle">
+          Create your account to start using MontAI.
         </p>
 
-        <form onSubmit={handleLogin}>
+        <form onSubmit={handleSignup}>
 
-          <div className="login-field">
+          <div className="signup-field">
             <label>Email</label>
 
             <input
@@ -76,7 +77,7 @@ function Login() {
             />
           </div>
 
-          <div className="login-field">
+          <div className="signup-field">
             <label>Password</label>
 
             <input
@@ -90,16 +91,15 @@ function Login() {
 
           <button
             type="submit"
-            className="login-button"
+            className="signup-button"
             disabled={loading}
           >
-            {loading ? "Logging in..." : "Login"}
+            {loading ? "Creating Account..." : "Sign Up"}
           </button>
 
         </form>
 
-        {/* GOOGLE LOGIN */}
-
+        {/* GOOGLE SIGNUP */}
         <div className="google-divider">
           <span>OR</span>
         </div>
@@ -107,7 +107,7 @@ function Login() {
         <button
           type="button"
           className="google-button"
-          onClick={handleGoogleLogin}
+          onClick={handleGoogleSignup}
           disabled={loading}
         >
           <span className="google-icon">G</span>
@@ -115,15 +115,15 @@ function Login() {
         </button>
 
         {message && (
-          <div className="login-message">
+          <div className="signup-message">
             {message}
           </div>
         )}
 
-        <p className="signup-text">
-          First time using MontAI?{" "}
-          <span onClick={() => navigate("/signup")}>
-            Sign Up
+        <p className="login-text">
+          Already have an account?{" "}
+          <span onClick={() => navigate("/login")}>
+            Login
           </span>
         </p>
 
@@ -139,4 +139,4 @@ function Login() {
   );
 }
 
-export default Login;
+export default Signup;

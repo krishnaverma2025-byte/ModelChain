@@ -5,204 +5,358 @@
 .navbar {
   width: 100%;
   height: 92px;
+
+  padding: 0 7%;
   box-sizing: border-box;
 
   display: flex;
   align-items: center;
-
-  padding: 0 60px;
+  justify-content: space-between;
 
   background: #08090d;
-  border-bottom: 1px solid #252831;
+  border-bottom: 1px solid #252832;
 
   position: relative;
   z-index: 1000;
 }
 
 
-/* LOGO */
+/* ================================
+   LOGO
+================================ */
 
 .navbar-logo {
   color: #ffffff;
-  text-decoration: none;
-
-  font-size: 32px;
+  font-size: 36px;
   font-weight: 700;
-
-  white-space: nowrap;
+  text-decoration: none;
 }
 
 
-/* NAVIGATION */
+/* ================================
+   NAVIGATION
+================================ */
 
 .navbar-links {
   display: flex;
   align-items: center;
-  gap: 58px;
-
-  margin-left: auto;
-  margin-right: 70px;
+  gap: 48px;
 }
 
 .navbar-links a {
   color: #ffffff;
-  text-decoration: none;
-
   font-size: 20px;
-  font-weight: 500;
+  text-decoration: none;
 
   transition: color 0.2s ease;
 }
 
 .navbar-links a:hover {
-  color: #8b5cf6;
+  color: #9b6cff;
 }
 
 
-/* RIGHT SIDE */
+/* ================================
+   RIGHT SIDE
+================================ */
 
 .navbar-right {
   display: flex;
   align-items: center;
-  gap: 14px;
-
-  white-space: nowrap;
 }
 
 
-/* CONNECT WALLET */
-
-.navbar-wallet-button {
-  padding: 14px 20px;
-
-  border: 1px solid #6d3df5;
-  border-radius: 10px;
-
-  background: transparent;
-  color: #ffffff;
-
-  font-size: 15px;
-  font-weight: 600;
-
-  cursor: pointer;
-
-  transition: all 0.2s ease;
-}
-
-.navbar-wallet-button:hover {
-  background: #6d3df5;
-
-  transform: translateY(-2px);
-
-  box-shadow: 0 8px 20px rgba(109, 61, 245, 0.25);
-}
-
-
-/* LOGIN */
+/* ================================
+   LOGIN
+================================ */
 
 .login-button {
+  min-width: 120px;
+  height: 52px;
+
+  padding: 0 24px;
+
   display: flex;
   align-items: center;
   justify-content: center;
-
-  min-width: 120px;
-  height: 56px;
-
-  padding: 0 25px;
 
   box-sizing: border-box;
 
   background: #6d3df5;
   color: #ffffff;
 
-  border-radius: 18px;
-
-  text-decoration: none;
+  border-radius: 16px;
 
   font-size: 18px;
   font-weight: 600;
 
-  transition: all 0.2s ease;
+  text-decoration: none;
+
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .login-button:hover {
   background: #7c4dff;
-
   transform: translateY(-2px);
 
-  box-shadow: 0 8px 20px rgba(109, 61, 245, 0.3);
+  box-shadow:
+    0 8px 22px rgba(109, 61, 245, 0.3);
 }
 
 
-/* LOGGED-IN USER */
+/* ================================
+   PROFILE MENU WRAPPER
+================================ */
 
-.user-section {
+.profile-menu-wrapper {
+  position: relative;
+}
+
+
+/* ================================
+   PROFILE BUTTON
+================================ */
+
+.profile-menu-button {
+  height: 54px;
+
+  padding: 5px 12px 5px 6px;
+
   display: flex;
   align-items: center;
-  gap: 12px;
-}
+  gap: 10px;
 
-.profile-button {
+  border: 1px solid #343844;
+  border-radius: 14px;
+
+  background: #0e1015;
   color: #ffffff;
-  text-decoration: none;
 
+  font-family: inherit;
   font-size: 16px;
-}
-
-.profile-button:hover {
-  color: #8b5cf6;
-}
-
-.logout-button {
-  padding: 12px 18px;
-
-  border: 1px solid #333640;
-  border-radius: 10px;
-
-  background: transparent;
-  color: #ffffff;
+  font-weight: 600;
 
   cursor: pointer;
 
-  font-size: 15px;
+  outline: none;
+
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.profile-menu-button:hover {
+  background: #151821;
+  border-color: #6d3df5;
+
+  box-shadow:
+    0 6px 20px rgba(0, 0, 0, 0.25);
+}
+
+
+/* ================================
+   NAVBAR AVATAR
+================================ */
+
+.navbar-avatar {
+  width: 42px;
+  height: 42px;
+
+  border-radius: 11px;
+
+  object-fit: cover;
+
+  display: block;
+}
+
+
+/* ================================
+   USER NAME
+================================ */
+
+.navbar-user-name {
+  max-width: 150px;
+
+  color: #ffffff;
+
+  font-size: 16px;
   font-weight: 600;
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.logout-button:hover {
-  background: #191b22;
+
+/* ================================
+   ARROW
+================================ */
+
+.dropdown-arrow {
+  margin-left: 2px;
+
+  color: #9b6cff;
+
+  font-size: 11px;
+
+  transition: transform 0.2s ease;
 }
 
 
-/* WALLET MESSAGE */
+/* ================================
+   DROPDOWN
+================================ */
 
-.wallet-coming-soon {
-  position: fixed;
+.profile-dropdown {
+  position: absolute;
 
-  top: 110px;
-  right: 30px;
+  top: calc(100% + 12px);
+  right: 0;
+
+  width: 250px;
+
+  padding: 10px;
+
+  box-sizing: border-box;
+
+  background: #0e1015;
+
+  border: 1px solid #292d37;
+  border-radius: 16px;
+
+  box-shadow:
+    0 20px 50px rgba(0, 0, 0, 0.5);
 
   z-index: 9999;
 
-  padding: 15px 22px;
-
-  background: #111217;
-  color: #ffffff;
-
-  border: 1px solid #6d3df5;
-  border-radius: 10px;
-
-  font-size: 15px;
-  font-weight: 600;
-
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
-
-  animation: walletMessageIn 0.2s ease;
+  animation: dropdownIn 0.18s ease;
 }
 
-@keyframes walletMessageIn {
+
+/* ================================
+   DROPDOWN USER
+================================ */
+
+.dropdown-user {
+  display: flex;
+  align-items: center;
+
+  gap: 12px;
+
+  padding: 10px 8px 12px;
+}
+
+.dropdown-user > div {
+  min-width: 0;
+}
+
+.dropdown-user strong {
+  display: block;
+
+  color: #ffffff;
+
+  font-size: 16px;
+  font-weight: 600;
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+
+/* ================================
+   DROPDOWN AVATAR
+================================ */
+
+.dropdown-avatar {
+  width: 44px;
+  height: 44px;
+
+  flex-shrink: 0;
+
+  border-radius: 12px;
+
+  object-fit: cover;
+}
+
+
+/* ================================
+   DIVIDER
+================================ */
+
+.dropdown-divider {
+  height: 1px;
+
+  margin: 5px 4px;
+
+  background: #292d37;
+}
+
+
+/* ================================
+   DROPDOWN BUTTONS
+================================ */
+
+.profile-dropdown button {
+  width: 100%;
+
+  min-height: 44px;
+
+  padding: 10px 12px;
+
+  display: flex;
+  align-items: center;
+
+  border: none;
+  border-radius: 9px;
+
+  background: transparent;
+
+  color: #ffffff;
+
+  font-family: inherit;
+  font-size: 15px;
+
+  text-align: left;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
+}
+
+.profile-dropdown button:hover {
+  background: #191c25;
+}
+
+
+/* ================================
+   LOGOUT
+================================ */
+
+.profile-dropdown .logout-menu-button {
+  color: #ff9aa5;
+}
+
+.profile-dropdown .logout-menu-button:hover {
+  background: #211317;
+  color: #ff7f8c;
+}
+
+
+/* ================================
+   ANIMATION
+================================ */
+
+@keyframes dropdownIn {
   from {
     opacity: 0;
-    transform: translateY(-8px);
+    transform: translateY(-6px);
   }
 
   to {
@@ -212,23 +366,46 @@
 }
 
 
-/* RESPONSIVE */
+/* ================================
+   MOBILE
+================================ */
 
-@media (max-width: 1000px) {
+@media (max-width: 900px) {
+
   .navbar {
     padding: 0 30px;
   }
 
   .navbar-links {
-    gap: 25px;
-    margin-right: 25px;
+    gap: 20px;
   }
 
   .navbar-links a {
-    font-size: 17px;
+    font-size: 16px;
   }
 
   .navbar-logo {
-    font-size: 28px;
+    font-size: 30px;
+  }
+}
+
+
+@media (max-width: 700px) {
+
+  .navbar {
+    padding: 0 20px;
+  }
+
+  .navbar-links {
+    display: none;
+  }
+
+  .navbar-avatar {
+    width: 40px;
+    height: 40px;
+  }
+
+  .navbar-user-name {
+    max-width: 110px;
   }
 }
