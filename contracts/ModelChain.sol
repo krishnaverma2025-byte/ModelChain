@@ -3,6 +3,10 @@ pragma solidity ^0.8.28;
 
 contract ModelChain {
     uint256 private nextModelId = 1;
+    address public immutable platform = msg.sender;
+    mapping(address => uint256) public pendingWithdrawals;
+    event ModelStatusChanged(uint256 indexed modelId, bool active);
+    event RevenueWithdrawn(address indexed recipient, uint256 amount);
 
     struct Model {
         uint256 id;
@@ -122,10 +126,10 @@ contract ModelChain {
 
         licensed[modelId][msg.sender] = true;
 
-        (bool success, ) =
-            model.owner.call{value: royaltyAmount}("");
-
-        require(success, "Royalty payment failed");
+        // Preserve royalty as the creator share, in whole percent. Account for
+        // the entire payment; recipients withdraw independently of purchases.
+        pendingWithdrawals[model.owner] += royaltyAmount;
+        pendingWithdrawals[platform] += msg.value - royaltyAmount;
 
         emit RoyaltyPaid(
             modelId,
@@ -149,6 +153,22 @@ contract ModelChain {
         returns (bool)
     {
         return licensed[modelId][buyer];
+    }
+
+    function setModelActive(uint256 modelId, bool active) external {
+        require(modelId > 0 && modelId < nextModelId, "Model does not exist");
+        require(msg.sender == models[modelId].owner, "Only creator");
+        models[modelId].active = active;
+        emit ModelStatusChanged(modelId, active);
+    }
+
+    function withdrawRevenue() external {
+        uint256 amount = pendingWithdrawals[msg.sender];
+        require(amount > 0, "Nothing to withdraw");
+        pendingWithdrawals[msg.sender] = 0;
+        (bool success,) = payable(msg.sender).call{value: amount}("");
+        require(success, "Withdrawal failed");
+        emit RevenueWithdrawn(msg.sender, amount);
     }
 
     function verifyModel(
