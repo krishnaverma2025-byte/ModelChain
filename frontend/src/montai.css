@@ -1,4 +1,5 @@
 :root {font-family:Inter,ui-sans-serif,system-ui,-apple-system,sans-serif;color:#eeeaf9;background:#08090d;font-synthesis:none;line-height:1.6}
+.navbar{height:auto;min-height:92px}.navbar-right .login-button{width:auto;height:42px;min-width:80px}
 .navbar-right{gap:16px;flex-wrap:wrap}.wallet-status{display:grid;max-width:220px}.wallet-status button{background:#20172e;color:#decafa;border:1px solid #55406f;border-radius:8px;padding:6px 10px;font-size:12px}.wallet-status small{font-size:10px;color:#bca7d5;overflow-wrap:anywhere}.wallet-status [role=alert]{color:#ff9b9b}.model-card>small{font-size:12px;color:#bca7d5}
 *{box-sizing:border-box}body{margin:0}button,input,select,textarea{font:inherit}button,a,input,select,textarea{outline-offset:4px}button{cursor:pointer}button:disabled{opacity:.55;cursor:not-allowed}a{color:#bc9aff}p{overflow-wrap:anywhere}
 .navbar{padding:18px max(24px,5vw);gap:24px;flex-wrap:wrap;border-bottom:1px solid #24212d}.navbar-logo{font-size:27px}.navbar-links{gap:24px}.navbar-links a{font-size:14px}.navbar-right .login-button{font-size:14px;padding:10px 20px}

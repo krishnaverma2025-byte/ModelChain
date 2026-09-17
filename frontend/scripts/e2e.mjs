@@ -74,6 +74,7 @@ try {
  await page.setViewportSize({width:390,height:844});
  await page.screenshot({path:resolve(temporary,'marketplace-mobile.png'),fullPage:true});
  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth),'Mobile page overflows');
+ assert.ok(await page.evaluate(()=>document.querySelector('.marketplace-page').getBoundingClientRect().top>=document.querySelector('.navbar').getBoundingClientRect().bottom),'Mobile navbar overlaps the page');
  account=await creator.getAddress();await page.goto(origin+'/dashboard');
  await page.getByRole('button',{name:'Withdraw',exact:true}).click();
  await page.waitForFunction(()=>document.body.innerText.includes('0.0 ETH'));
