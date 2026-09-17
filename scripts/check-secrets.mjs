@@ -1,17 +1,17 @@
 // Read-only check; reports paths and categories, never credential values.
 import { execFileSync } from 'node:child_process';
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, existsSync, statSync } from 'node:fs';
 const files=[...new Set(execFileSync('git',['ls-files','--cached','--others','--exclude-standard','-z'],{encoding:'utf8'}).split('\0').filter(Boolean))];
 const secrets=[];
 for(const file of ['.env','backend/.env']){
- if(!existsSync(file))continue;
+ if(!existsSync(file)||!statSync(file).isFile())continue;
  for(const match of readFileSync(file,'utf8').matchAll(/^(PINATA_JWT|MODEL_MASTER_KEY|SEPOLIA_PRIVATE_KEY)\s*=\s*(.*)$/gm)){
    const value=match[2].trim().replace(/^['"]|['"]$/g,'');if(value.length>=24)secrets.push(value);
  }
 }
 const hits=[];
 for(const file of files){
- if(!existsSync(file))continue;
+ if(!existsSync(file)||!statSync(file).isFile())continue;
  if(/(^|\/)\.env($|\.)/.test(file)&&!file.endsWith('.env.example')){hits.push(`${file}: environment file tracked`);continue;}
  const text=readFileSync(file,'utf8');if(text.includes('\0'))continue;
  if(secrets.some(value=>text.includes(value)))hits.push(`${file}: ignored environment credential copied into source`);
