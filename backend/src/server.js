@@ -3,7 +3,7 @@ import { createApp } from './app.js';
 import { createStorage } from './storage.js';
 const {RPC_URL,CONTRACT_ADDRESS,CHAIN_ID,MODEL_MASTER_KEY,PINATA_JWT,CLIENT_ORIGIN}=process.env;
 if(!RPC_URL || !isAddress(CONTRACT_ADDRESS) || !CHAIN_ID || !CLIENT_ORIGIN) throw new Error('Set RPC_URL, CONTRACT_ADDRESS, CHAIN_ID, CLIENT_ORIGIN');
-const provider=new JsonRpcProvider(RPC_URL);
+const provider=new JsonRpcProvider(RPC_URL,undefined,{cacheTimeout:-1});
 if((await provider.getNetwork()).chainId!==BigInt(CHAIN_ID)) throw new Error('RPC chain ID mismatch');
 if(await provider.getCode(CONTRACT_ADDRESS)==='0x') throw new Error('No contract at configured address');
 const chain=new Contract(CONTRACT_ADDRESS,[

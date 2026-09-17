@@ -1,26 +1,26 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ethers } from "ethers";
-import { config, ABI, readContract, metadata } from "../blockchain";
+import { readContract, metadata, purchaseModelLicense, errorText } from "../blockchain";
 import "./Details.css";
 import ModelAccess, { CopyValue } from "../components/ModelAccess";
-
-const CONTRACT_ADDRESS = config.address;
-const CONTRACT_ABI = ABI;
 
 function Details() {
   const { id } = useParams();
 
   const [walletRevision, setWalletRevision] = useState(0);
-  useEffect(()=>{const changed=()=>setWalletRevision(n=>n+1);window.ethereum?.on("accountsChanged",changed);window.ethereum?.on("chainChanged",changed);return()=>{window.ethereum?.removeListener("accountsChanged",changed);window.ethereum?.removeListener("chainChanged",changed);};},[]);
+  const revision=useRef(0);
   const [model, setModel] = useState(null);
   const [loading, setLoading] = useState(true);
   const [purchasing, setPurchasing] = useState(false);
   const [licensed, setLicensed] = useState(false);
+  const [owner, setOwner] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  useEffect(()=>{const requests=revision;const changed=()=>{requests.current++;setLicensed(false);setOwner(false);setPurchasing(false);setSuccess('');setError('');setWalletRevision(n=>n+1);};window.ethereum?.on("accountsChanged",changed);window.ethereum?.on("chainChanged",changed);return()=>{requests.current++;window.ethereum?.removeListener("accountsChanged",changed);window.ethereum?.removeListener("chainChanged",changed);};},[]);
 
   useEffect(() => {
+    const requests=revision;
     let cancelled = false;
 
     async function loadModel() {
@@ -28,9 +28,10 @@ function Details() {
       setError("");
       setSuccess("");
       setLicensed(false);
+      setOwner(false);
 
       try {
-        if (!/^[1-9]\d*$/.test(String(id))) {
+        if (!/^[1-9]\d{0,18}$/.test(String(id))) {
           throw new Error(
             "Invalid blockchain model ID."
           );
@@ -87,6 +88,7 @@ function Details() {
 
               if (!cancelled) {
                 setLicensed(alreadyLicensed);
+                setOwner(accounts[0].toLowerCase()===data.owner.toLowerCase());
               }
             }
           } catch (licenseError) {
@@ -122,139 +124,25 @@ function Details() {
 
     return () => {
       cancelled = true;
+      requests.current++;
     };
   }, [id, walletRevision]);
 
   const handleLicense = async () => {
-    setError("");
-    setSuccess("");
-
+    const request = revision.current;
+    setError(""); setSuccess(""); setPurchasing(true);
     try {
-      if (!window.ethereum) {
-        throw new Error(
-          "MetaMask is not installed."
-        );
-      }
-
-      if (!model) {
-        throw new Error(
-          "Model information is not loaded."
-        );
-      }
-
-      setPurchasing(true);
-
-      const browserProvider =
-        new ethers.BrowserProvider(
-          window.ethereum
-        );
-
-      await browserProvider.send(
-        "eth_requestAccounts",
-        []
-      );
-
-      // Check MetaMask network
-      const network =
-        await browserProvider.getNetwork();
-
-      if (network.chainId !== config.chainId) {
-        throw new Error(
-          `Please select network ${config.chainId} in MetaMask.`
-        );
-      }
-
-      const signer =
-        await browserProvider.getSigner();
-
-      const walletAddress =
-        await signer.getAddress();
-
-      if (
-        walletAddress.toLowerCase() ===
-        model.creator.toLowerCase()
-      ) {
-        throw new Error(
-          "The model owner cannot purchase their own model."
-        );
-      }
-
-      const contract = new ethers.Contract(
-        CONTRACT_ADDRESS,
-        CONTRACT_ABI,
-        signer
-      );
-
-      const modelId = BigInt(model.id);
-
-      const alreadyLicensed =
-        await contract.hasLicense(
-          modelId,
-          walletAddress
-        );
-
-      if (alreadyLicensed) {
-        setLicensed(true);
-
-        throw new Error(
-          "You already own a license for this model."
-        );
-      }
-
-      setSuccess(
-        "Opening MetaMask..."
-      );
-
-      const transaction =
-        await contract.purchaseLicense(
-          modelId,
-          {
-            value: model.priceWei,
-          }
-        );
-
-      setSuccess(
-        "Transaction submitted. Waiting for confirmation..."
-      );
-
-      await transaction.wait();
-
+      if (!model) throw new Error("Model information is not loaded.");
+      const result = await purchaseModelLicense(model.id, message => {
+        if (request === revision.current) setSuccess(message);
+      });
+      if (request !== revision.current) return;
       setLicensed(true);
-
-      setSuccess(
-        "License purchased successfully! Transaction confirmed on the blockchain."
-      );
+      setSuccess(`License verified on-chain for ${result.address}. Transaction: ${result.transactionHash}`);
     } catch (err) {
-      console.error(
-        "License purchase failed:",
-        err
-      );
-
-      if (
-        err?.code ===
-        "ACTION_REJECTED"
-      ) {
-        setError(
-          "Transaction was rejected in MetaMask."
-        );
-      } else if (
-        err?.shortMessage
-      ) {
-        setError(
-          err.shortMessage
-        );
-      } else if (err?.reason) {
-        setError(
-          err.reason
-        );
-      } else {
-        setError(
-          err?.message ||
-            "License purchase failed."
-        );
-      }
+      if (request === revision.current) {setSuccess("");setError(errorText(err));}
     } finally {
-      setPurchasing(false);
+      if (request === revision.current) setPurchasing(false);
     }
   };
 
@@ -471,11 +359,11 @@ function Details() {
               <button
                 className="license-button"
                 onClick={handleLicense}
-                disabled={purchasing || !model.active}
+                disabled={purchasing || !model.active || owner}
               >
                 {purchasing
                   ? "Processing..."
-                  : "License Model"}
+                  : owner ? "You own this model" : "License Model"}
               </button>
             )}
 
@@ -501,7 +389,7 @@ function Details() {
               </p>
             )}
 
-          <ModelAccess id={model.id} />
+          <ModelAccess key={`${model.id}:${walletRevision}`} id={model.id} />
           </aside>
 
         </div>

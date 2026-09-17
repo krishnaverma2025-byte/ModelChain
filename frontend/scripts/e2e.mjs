@@ -28,7 +28,7 @@ try {
  const nodeLog=start(resolve(root,'node_modules/.bin/hardhat'),['node','--port','18545'],root);
  await ready(rpc,nodeLog);
  const provider=new JsonRpcProvider(rpc);
- const creator=await provider.getSigner(0), buyer=await provider.getSigner(1);
+ const creator=await provider.getSigner(0), buyer=await provider.getSigner(1), buyer3=await provider.getSigner(2), buyer4=await provider.getSigner(3);
  const nonce=await provider.send('eth_getTransactionCount',[await creator.getAddress(),'latest']);
  execFileSync(resolve(root,'node_modules/.bin/hardhat'),['run','scripts/deploy.ts','--network','localhost'],{cwd:root,env:{...process.env,RPC_URL:rpc,MONTAI_DEPLOY_DRY_RUN:'1'},stdio:'pipe'});
  assert.equal(await provider.send('eth_getTransactionCount',[await creator.getAddress(),'latest']),nonce,'Deployment preflight sent a transaction');
@@ -41,12 +41,19 @@ try {
  await ready(origin,viteLog);
  browser=await chromium.launch();const page=await browser.newPage({viewport:{width:1440,height:1000}});
  const errors=[];page.on('pageerror',e=>errors.push(e.message));
- let account=await creator.getAddress(), wrongNetwork=false, reject=false;
+ let account=await creator.getAddress(), wrongNetwork=false, reject=false, rejectMethod='', switchDuringSign=false;
+ const purchases=[];let authRequests=0;
  await page.exposeFunction('walletRpc',async ({method,params=[]})=>{
-   if(reject && ['eth_requestAccounts','personal_sign','eth_sendTransaction'].includes(method)) return {walletError:true};
+   if((reject && ['eth_requestAccounts','personal_sign','eth_sendTransaction'].includes(method)) || method===rejectMethod) return {walletError:true};
    if(method==='eth_accounts'||method==='eth_requestAccounts')return [account];
    if(method==='eth_chainId')return wrongNetwork?'0x1':'0x7a69';
-   if(method==='personal_sign')return provider.send('eth_sign',[params[1],params[0]]);
+   if(method==='personal_sign'){
+     authRequests++;
+     const signature=await provider.send('eth_sign',[params[1],params[0]]);
+     if(switchDuringSign){account=await buyer4.getAddress();await page.evaluate(value=>window.emitWalletEvent('accountsChanged',[value]),account);}
+     return signature;
+   }
+   if(method==='eth_sendTransaction' && params[0].data?.startsWith('0xc8a028a8'))purchases.push(params[0].from.toLowerCase());
    return provider.send(method,params);
  });
  await page.addInitScript(()=>{
@@ -60,6 +67,8 @@ try {
  await page.locator('input[type=file]').setInputFiles({name:'vision.onnx',mimeType:'application/octet-stream',buffer:bytes});
  await page.getByRole('button',{name:'Register Model',exact:true}).click();
  await page.waitForURL('**/model/1',{timeout:30000});
+ await page.getByRole('button',{name:'You own this model',exact:true}).waitFor();
+ assert.equal(await page.getByRole('button',{name:'You own this model',exact:true}).isDisabled(),true);
  assert.equal(await contract.getModelCount(),1n);
  const inspectionNonce=await provider.send('eth_getTransactionCount',[await creator.getAddress(),'latest']);
  execFileSync(resolve(root,'node_modules/.bin/hardhat'),['run','scripts/interact.ts','--network','localhost'],{cwd:root,env:{...process.env,RPC_URL:rpc,CONTRACT_ADDRESS:address,MODEL_ID:'1'},stdio:'pipe'});
@@ -76,6 +85,33 @@ try {
  const downloadPromise=page.waitForEvent('download');
  await page.getByRole('button',{name:'Download licensed model'}).click();
  const download=await downloadPromise;assert.deepEqual(await readFile(await download.path()),bytes);
+ // Two independent buyers, fourth-account denial, and A2 → A3 → A2 propagation.
+ account=await buyer3.getAddress();await page.evaluate(value=>window.emitWalletEvent('accountsChanged',[value]),account);
+ await page.getByRole('button',{name:'License Model',exact:true}).waitFor();
+ assert.equal(await contract.hasLicense(1,account),false);
+ await page.getByRole('button',{name:'Download licensed model'}).click();
+ await page.getByRole('status').filter({hasText:/license is required/}).waitFor();
+ rejectMethod='eth_sendTransaction';
+ await page.getByRole('button',{name:'License Model',exact:true}).click();await page.getByText(/Request rejected in MetaMask/).waitFor();
+ rejectMethod='';const authBeforePurchase=authRequests;
+ await page.getByRole('button',{name:'License Model',exact:true}).click();await page.getByRole('button',{name:/License Owned/}).waitFor();
+ assert.equal(authRequests,authBeforePurchase,'Purchase unexpectedly requested authentication signature');
+ assert.equal(await contract.hasLicense(1,account),true);
+ assert.deepEqual(purchases,[(await buyer.getAddress()).toLowerCase(),(await buyer3.getAddress()).toLowerCase()]);
+ rejectMethod='personal_sign';await page.getByRole('button',{name:'Download licensed model'}).click();
+ await page.getByRole('status').filter({hasText:/rejected/}).waitFor();rejectMethod='';
+ const thirdDownload=page.waitForEvent('download');await page.getByRole('button',{name:'Download licensed model'}).click();
+ assert.deepEqual(await readFile(await (await thirdDownload).path()),bytes);
+ switchDuringSign=true;await page.getByRole('button',{name:'Download licensed model'}).click();
+ await page.getByRole('button',{name:'License Model',exact:true}).waitFor();switchDuringSign=false;
+ assert.equal(await contract.hasLicense(1,account),false);
+ await page.getByRole('button',{name:'Download licensed model'}).click();await page.getByRole('status').filter({hasText:/license is required/}).waitFor();
+ for(const signer of [buyer,buyer3]){
+   account=await signer.getAddress();await page.evaluate(value=>window.emitWalletEvent('accountsChanged',[value]),account);
+   await page.getByRole('button',{name:/License Owned/}).waitFor();
+ }
+ const recoveredDownload=page.waitForEvent('download');await page.getByRole('button',{name:'Download licensed model'}).click();
+ assert.deepEqual(await readFile(await (await recoveredDownload).path()),bytes);
  await page.locator('.model-access input[type=file]').setInputFiles({name:'tampered.onnx',mimeType:'application/octet-stream',buffer:Buffer.from('tampered')});
  await page.getByRole('status').filter({hasText:/verification failed/}).waitFor();
  await page.screenshot({path:resolve(temporary,'details-desktop.png'),fullPage:true});
@@ -110,7 +146,8 @@ try {
  await page.goto(origin+'/model/0');await page.getByRole('heading',{name:'Model Not Found'}).waitFor();
  await page.goto(origin+'/login');await page.getByRole('heading',{name:'Account services are not configured'}).waitFor();
  assert.deepEqual(errors,[]);
- console.log('PASS: upload/encryption → registration → denied unlicensed access → purchase → verified download → tamper detection → marketplace/dashboard → withdrawal/deactivation → wrong network/rejection.');
+ assert.doesNotMatch(nodeLog(),/unrecognized-selector|StackUnderflow/,'MontAI integration generated suspicious contract calls');
+ console.log('PASS: creator restrictions; Account 2 and 3 purchases and verified downloads; Account 4 denial; account/signature switching; rejected transaction/signature; refresh; dashboard; withdrawal; deactivation; tamper detection; wrong network; no wallet; invalid ID.');
  console.log(`Screenshots and isolated encrypted test data: ${temporary}`);
  await provider.destroy();
 } finally {

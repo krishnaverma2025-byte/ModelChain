@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { formatEther } from "ethers";
-import { readContract, wallet, metadata, short, errorText } from "../blockchain";
+import { readContract, wallet, assertCurrentWallet, metadata, short, errorText } from "../blockchain";
 import "./Dashboard.css";
 
 export default function Dashboard() {
@@ -36,7 +36,7 @@ export default function Dashboard() {
    setBusy(true);try{
      const w=await wallet();setStatus("Confirm in MetaMask…");
      const tx=kind==="withdraw"?await w.contract.withdrawRevenue():await w.contract.setModelActive(m.id,!m.active);
-     setStatus("Transaction submitted. Waiting for confirmation…");await tx.wait();await load(w.address);
+     setStatus("Transaction submitted. Waiting for confirmation…");await tx.wait();await assertCurrentWallet(w.address);await load(w.address);
    }catch(e){setStatus(errorText(e));}finally{setBusy(false);}
  }
  function rows(items,creator){return items.length?<div className="dashboard-models">{items.map(m=><article className="dashboard-model" key={m.id}><div><span className="model-category">#{m.id} · {m.active?"Active":"Inactive"}</span><h3><Link to={`/model/${m.id}`}>{m.name}</Link></h3><p>{m.price} ETH · Creator share {m.royalty}%</p><p title={m.cid}>{short(m.cid)}</p></div><div>{creator&&<button disabled={busy} onClick={()=>action("status",m)}>{m.active?"Deactivate":"Reactivate"}</button>}<Link to={`/model/${m.id}`}>{creator?"View details":"Access & verify"} →</Link></div></article>)}</div>:<p className="empty-state">{busy?"Reading blockchain…":creator?"You have not registered any models yet.":"Your purchased licenses will appear here."}</p>;}

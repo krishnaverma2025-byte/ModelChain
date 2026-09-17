@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ethers } from "ethers";
 import "./UploadModel.css";
-import { wallet, authenticate, api, hashFile, errorText } from "../blockchain";
+import { wallet, assertCurrentWallet, authenticate, api, hashFile, errorText } from "../blockchain";
 
 function UploadModel() {
   const navigate = useNavigate();
@@ -31,7 +31,7 @@ function UploadModel() {
     if (!Number.isInteger(Number(royalty)) || Number(royalty)<0 || Number(royalty)>100) {setError("Creator share must be a whole percentage from 0 to 100.");return;}
     setLoading(true);
     try {
-      const {signer, contract}=await wallet();
+      const {signer, address, contract}=await wallet();
       setMessage("Sign a free authentication message in MetaMask.");
       const headers=await authenticate(signer);
       const form=new FormData();
@@ -40,6 +40,7 @@ function UploadModel() {
       setMessage("Encrypting and storing your model off-chain…");
       const uploaded=await(await api("/api/uploads",{method:"POST",headers,body:form})).json();
       if(uploaded.modelHash !== await hashFile(modelFile)) throw new Error("Upload integrity mismatch.");
+      await assertCurrentWallet(address);
       setMessage(uploaded.storage==="local"?"Development storage: encrypted local bytes. Confirm registration in MetaMask.":"Encrypted IPFS upload complete. Confirm registration in MetaMask.");
       const tx=await contract.registerModel(modelName.trim(),uploaded.cid,uploaded.modelHash,ethers.parseEther(price),Number(royalty));
       setMessage("Transaction submitted. Waiting for confirmation…");
