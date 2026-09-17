@@ -41,11 +41,14 @@ try {
  await ready(origin,viteLog);
  browser=await chromium.launch();const page=await browser.newPage({viewport:{width:1440,height:1000}});
  const errors=[];page.on('pageerror',e=>errors.push(e.message));
- let account=await creator.getAddress(), wrongNetwork=false, reject=false, rejectMethod='', switchDuringSign=false;
+ let account=await creator.getAddress(), wrongNetwork=false, reject=false, rejectMethod='', switchDuringSign=false, connectEvent=false;
  const purchases=[];let authRequests=0;
  await page.exposeFunction('walletRpc',async ({method,params=[]})=>{
    if((reject && ['eth_requestAccounts','personal_sign','eth_sendTransaction'].includes(method)) || method===rejectMethod) return {walletError:true};
-   if(method==='eth_accounts'||method==='eth_requestAccounts')return [account];
+   if(method==='eth_accounts'||method==='eth_requestAccounts'){
+     if(method==='eth_requestAccounts' && connectEvent){connectEvent=false;await page.evaluate(value=>window.emitWalletEvent('accountsChanged',[value]),account);}
+     return [account];
+   }
    if(method==='eth_chainId')return wrongNetwork?'0x1':'0x7a69';
    if(method==='personal_sign'){
      authRequests++;
@@ -78,6 +81,7 @@ try {
  await page.getByRole('button',{name:'License Model',exact:true}).waitFor();
  await page.getByRole('button',{name:'Download licensed model'}).click();
  await page.getByRole('status').filter({hasText:/license is required/i}).waitFor();
+ connectEvent=true;
  await page.getByRole('button',{name:'License Model',exact:true}).click();
  await page.getByRole('button',{name:/License Owned/}).waitFor({timeout:30000});
  assert.equal(await contract.hasLicense(1,account),true);

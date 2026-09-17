@@ -136,7 +136,12 @@ function Details() {
       const result = await purchaseModelLicense(model.id, message => {
         if (request === revision.current) setSuccess(message);
       });
-      if (request !== revision.current) return;
+      if (request !== revision.current) {
+        // Connecting MetaMask can emit accountsChanged mid-request. Refresh the
+        // currently displayed model instead of applying the old render's state.
+        setWalletRevision(n=>n+1);
+        return;
+      }
       setLicensed(true);
       setSuccess(`License verified on-chain for ${result.address}. Transaction: ${result.transactionHash}`);
     } catch (err) {
