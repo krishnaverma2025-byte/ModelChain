@@ -51,6 +51,7 @@ try {
  });
  await page.addInitScript(()=>{
    const listeners={};window.ethereum={request:async args=>{const result=await window.walletRpc(args);if(result?.walletError)throw Object.assign(new Error('User rejected request'),{code:4001});return result;},on:(name,fn)=>(listeners[name]??=[]).push(fn),removeListener:(name,fn)=>listeners[name]=(listeners[name]||[]).filter(f=>f!==fn)};
+   window.emitWalletEvent=(name,value)=>(listeners[name]||[]).forEach(fn=>fn(value));
  });
  await page.goto(origin+'/upload');
  await page.getByPlaceholder('Enter model name').fill('Verified vision model');
@@ -60,12 +61,18 @@ try {
  await page.getByRole('button',{name:'Register Model',exact:true}).click();
  await page.waitForURL('**/model/1',{timeout:30000});
  assert.equal(await contract.getModelCount(),1n);
- account=await buyer.getAddress();await page.reload();
+ const inspectionNonce=await provider.send('eth_getTransactionCount',[await creator.getAddress(),'latest']);
+ execFileSync(resolve(root,'node_modules/.bin/hardhat'),['run','scripts/interact.ts','--network','localhost'],{cwd:root,env:{...process.env,RPC_URL:rpc,CONTRACT_ADDRESS:address,MODEL_ID:'1'},stdio:'pipe'});
+ assert.equal(await provider.send('eth_getTransactionCount',[await creator.getAddress(),'latest']),inspectionNonce,'Local inspection utility sent a transaction');
+ account=await buyer.getAddress();
+ await page.evaluate(value=>window.emitWalletEvent('accountsChanged',[value]),account);
+ await page.getByRole('button',{name:'License Model',exact:true}).waitFor();
  await page.getByRole('button',{name:'Download licensed model'}).click();
  await page.getByRole('status').filter({hasText:/license is required/i}).waitFor();
  await page.getByRole('button',{name:'License Model',exact:true}).click();
  await page.getByRole('button',{name:/License Owned/}).waitFor({timeout:30000});
  assert.equal(await contract.hasLicense(1,account),true);
+ await page.reload();await page.getByRole('button',{name:/License Owned/}).waitFor();
  const downloadPromise=page.waitForEvent('download');
  await page.getByRole('button',{name:'Download licensed model'}).click();
  const download=await downloadPromise;assert.deepEqual(await readFile(await download.path()),bytes);
@@ -73,6 +80,8 @@ try {
  await page.getByRole('status').filter({hasText:/verification failed/}).waitFor();
  await page.screenshot({path:resolve(temporary,'details-desktop.png'),fullPage:true});
  await page.goto(origin+'/dashboard');await page.getByRole('link',{name:'Access & verify →'}).waitFor();
+ await page.evaluate(()=>window.emitWalletEvent('chainChanged','0x1'));
+ await page.getByRole('button',{name:'Connect wallet',exact:true}).last().waitFor();
  await page.goto(origin+'/marketplace');await page.getByText('Verified vision model',{exact:true}).waitFor();
  await page.setViewportSize({width:390,height:844});
  await page.screenshot({path:resolve(temporary,'marketplace-mobile.png'),fullPage:true});
@@ -94,6 +103,12 @@ try {
  await page.getByRole('button',{name:'Register Model',exact:true}).click();
  await page.getByText(/rejected/i).waitFor();
  assert.equal(await contract.getModelCount(),1n);
+ reject=false;
+ await page.evaluate(()=>{delete window.ethereum;});
+ await page.getByRole('button',{name:'Register Model',exact:true}).click();
+ await page.getByText('Install MetaMask to continue.',{exact:true}).waitFor();
+ await page.goto(origin+'/model/0');await page.getByRole('heading',{name:'Model Not Found'}).waitFor();
+ await page.goto(origin+'/login');await page.getByRole('heading',{name:'Account services are not configured'}).waitFor();
  assert.deepEqual(errors,[]);
  console.log('PASS: upload/encryption → registration → denied unlicensed access → purchase → verified download → tamper detection → marketplace/dashboard → withdrawal/deactivation → wrong network/rejection.');
  console.log(`Screenshots and isolated encrypted test data: ${temporary}`);
