@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "hardhat test",
+    "security:scan": "node scripts/check-secrets.mjs",
     "compile": "hardhat compile",
     "node": "hardhat node",
     "deploy:local": "hardhat run scripts/deploy.ts --network localhost"
@@ -14,8 +15,13 @@
   "license": "ISC",
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox-mocha-ethers": "^3.0.7",
+    "@types/mocha": "^10.0.10",
     "hardhat": "^3.14.0",
-    "solc": "^0.8.28"
+    "solc": "0.8.28"
   },
-  "type": "module"
+  "type": "module",
+  "overrides": {
+    "solc": { "tmp": "^0.2.7" },
+    "mocha": { "diff": "^8.0.3", "serialize-javascript": "^7.1.1" }
+  }
 }
