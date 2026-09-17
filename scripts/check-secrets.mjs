@@ -10,14 +10,30 @@ for(const file of ['.env','backend/.env']){
  }
 }
 const hits=[];
-for(const file of files){
- if(!existsSync(file)||!statSync(file).isFile())continue;
- if(/(^|\/)\.env($|\.)/.test(file)&&!file.endsWith('.env.example')){hits.push(`${file}: environment file tracked`);continue;}
- const text=readFileSync(file,'utf8');if(text.includes('\0'))continue;
+function scan(file,text){
+ if(text.includes('\0'))return;
  if(secrets.some(value=>text.includes(value)))hits.push(`${file}: ignored environment credential copied into source`);
  if(/-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|gh[pousr]_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{40,}|sb_secret_[A-Za-z0-9_-]{20,}/.test(text))hits.push(`${file}: credential pattern`);
  for(const token of text.match(/eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/g)||[]){
    try{if(JSON.parse(Buffer.from(token.split('.')[1],'base64url')).role==='service_role')hits.push(`${file}: Supabase service-role token`);}catch{}
  }
+}
+for(const file of files){
+ if(!existsSync(file)||!statSync(file).isFile())continue;
+ if(/(^|\/)\.env($|\.)/.test(file)&&!file.endsWith('.env.example')){hits.push(`${file}: environment file tracked`);continue;}
+ scan(file,readFileSync(file,'utf8'));
+}
+if(process.argv.includes('--history')){
+ const objects=execFileSync('git',['rev-list','--objects','--all'],{encoding:'utf8',maxBuffer:32*1024*1024}).trim().split('\n');
+ const info=execFileSync('git',['cat-file','--batch-check=%(objectname) %(objecttype) %(objectsize)'],{input:objects.map(x=>x.split(' ')[0]).join('\n')+'\n',encoding:'utf8',maxBuffer:32*1024*1024}).trim().split('\n');
+ let count=0;
+ for(let i=0;i<info.length;i++){
+   const [hash,type,size]=info[i].split(' ');if(type!=='blob')continue;
+   const name=objects[i].slice(hash.length+1);
+   if(Number(size)>4*1024*1024){console.log(`History blob skipped (over 4 MB): ${name}`);continue;}
+   if(/(^|\/)\.env($|\.)/.test(name)&&!name.endsWith('.env.example'))hits.push(`history ${hash.slice(0,12)} ${name}: private environment file`);
+   scan(`history ${hash.slice(0,12)} ${name}`,execFileSync('git',['cat-file','blob',hash],{encoding:'utf8',maxBuffer:5*1024*1024}));count++;
+ }
+ console.log(`Scanned ${count} history blobs across available refs.`);
 }
 if(hits.length){console.error(hits.join('\n'));process.exitCode=1;}else console.log('PASS: tracked/unignored files contain no detected credentials or tracked private environment files.');
