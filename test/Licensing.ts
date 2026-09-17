@@ -2,6 +2,25 @@ import { expect } from "chai";
 import { network } from "hardhat";
 
 describe("License settlement", () => {
+  it("preserves credits on failed payout and prevents double withdrawal by reentry", async () => {
+    const { ethers } = await network.create();
+    const [,buyer]=await ethers.getSigners();
+    const c=await ethers.deployContract("ModelChain");
+    const recipient=await ethers.deployContract("RevenueRecipient",[await c.getAddress()]);
+    await recipient.register();
+    await recipient.configure(true,false);
+    await c.connect(buyer).purchaseLicense(1,{value:100n});
+    await expect(recipient.withdraw()).to.be.revertedWith("Withdrawal failed");
+    expect(await c.pendingWithdrawals(await recipient.getAddress())).to.equal(95n);
+    await recipient.configure(false,true);
+    await recipient.withdraw();
+    expect(await recipient.reentrySucceeded()).to.equal(false);
+    expect(await c.pendingWithdrawals(await recipient.getAddress())).to.equal(0n);
+    expect(await ethers.provider.getBalance(await recipient.getAddress())).to.equal(95n);
+    expect(await ethers.provider.getBalance(await c.getAddress())).to.equal(5n);
+    await c.withdrawRevenue();
+    expect(await ethers.provider.getBalance(await c.getAddress())).to.equal(0n);
+  });
   it("enumerates, rejects invalid purchases, and allocates every wei", async () => {
     const { ethers } = await network.connect();
     const [platform, creator, buyer] = await ethers.getSigners();
