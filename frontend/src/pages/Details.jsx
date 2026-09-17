@@ -52,6 +52,7 @@ function Details() {
         if (cancelled) return;
 
         const extra = await metadata(blockchainId);
+        if (cancelled) return;
         setModel({
           id: data.id.toString(),
           name: data.name,

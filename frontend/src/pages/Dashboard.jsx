@@ -1,12 +1,14 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { formatEther } from "ethers";
 import { readContract, wallet, metadata, short, errorText } from "../blockchain";
 import "./Dashboard.css";
 
 export default function Dashboard() {
+ const revision=useRef(0);
  const [address,setAddress]=useState(""),[models,setModels]=useState([]),[licenses,setLicenses]=useState([]),[revenue,setRevenue]=useState("0"),[status,setStatus]=useState("Connect your wallet to view your models and licenses."),[busy,setBusy]=useState(false);
  async function load(account){
+   const request=++revision.current;
    setBusy(true);
    try{
      const c=await readContract();const count=await c.getModelCount();const mine=[],owned=[];
@@ -15,16 +17,19 @@ export default function Dashboard() {
        if(m.owner.toLowerCase()===account.toLowerCase())mine.push(entry);
        if(await c.hasLicense(id,account))owned.push(entry);
      }
-     setModels(mine);setLicenses(owned);setRevenue(formatEther(await c.pendingWithdrawals(account)));setStatus("");
-   }catch(e){setStatus(errorText(e));}finally{setBusy(false);}
+     const earnings=formatEther(await c.pendingWithdrawals(account));
+     if(request!==revision.current)return;
+     setModels(mine);setLicenses(owned);setRevenue(earnings);setStatus("");
+   }catch(e){if(request===revision.current)setStatus(errorText(e));}finally{if(request===revision.current)setBusy(false);}
  }
  useEffect(()=>{
+   const requests=revision;
    let disposed=false;
-   const changed=accounts=>{const a=accounts[0]||"";if(disposed)return;setAddress(a);setModels([]);setLicenses([]);setRevenue("0");if(a)load(a);};
+   const changed=accounts=>{const a=accounts[0]||"";if(disposed)return;revision.current++;setAddress(a);setModels([]);setLicenses([]);setRevenue("0");setBusy(false);setStatus(a?"Reading blockchain…":"Connect your wallet to view your models and licenses.");if(a)load(a);};
    window.ethereum?.request({method:"eth_accounts"}).then(changed).catch(()=>{});
    const networkChanged=()=>changed([]);
    window.ethereum?.on("accountsChanged",changed);window.ethereum?.on("chainChanged",networkChanged);
-   return()=>{disposed=true;window.ethereum?.removeListener("accountsChanged",changed);window.ethereum?.removeListener("chainChanged",networkChanged);};
+   return()=>{disposed=true;requests.current++;window.ethereum?.removeListener("accountsChanged",changed);window.ethereum?.removeListener("chainChanged",networkChanged);};
  },[]);
  async function connect(){try{const w=await wallet();setAddress(w.address);await load(w.address);}catch(e){setStatus(errorText(e));}}
  async function action(kind,m){
