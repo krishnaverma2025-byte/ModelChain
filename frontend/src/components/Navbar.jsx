@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
 import "./Navbar.css";
+import WalletStatus from './WalletStatus';
 
 function Navbar() {
   const navigate = useNavigate();
@@ -33,6 +34,7 @@ function Navbar() {
   };
 
   useEffect(() => {
+    if (!supabase) return;
     // Get current logged-in user
     supabase.auth.getSession().then(({ data: { session } }) => {
       const currentUser = session?.user ?? null;
@@ -126,6 +128,7 @@ function Navbar() {
 
       {/* RIGHT SIDE */}
       <div className="navbar-right">
+        <WalletStatus />
 
         {user ? (
 
