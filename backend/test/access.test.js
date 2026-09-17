@@ -20,6 +20,10 @@ test('encrypted upload, signature replay prevention and server-side license chec
  async function login(w){const challenge=await(await post('/api/auth/challenge',{address:w.address})).json();const body={nonce:challenge.nonce,signature:await w.signMessage(challenge.message)};const session=await(await post('/api/auth/session',body)).json();assert.equal((await post('/api/auth/session',body)).status,401);return {Authorization:`Bearer ${session.token}`};}
  try {
  const ownerHeaders=await login(owner), buyerHeaders=await login(buyer);
+ assert.equal((await post('/api/auth/challenge',{})).status,400);
+ assert.equal((await post('/api/auth/session',{})).status,401);
+ const challenge=await(await post('/api/auth/challenge',{address:buyer.address})).json();
+ assert.equal((await post('/api/auth/session',{nonce:challenge.nonce,signature:await owner.signMessage(challenge.message)})).status,401);
  const bytes=Buffer.from('private original model bytes');
  const form=new FormData();form.append('model',new Blob([bytes]),'model.onnx');form.append('name','Model');
  const uploaded=await fetch(api+'/api/uploads',{method:'POST',headers:ownerHeaders,body:form}); assert.equal(uploaded.status,201);
@@ -28,6 +32,10 @@ test('encrypted upload, signature replay prevention and server-side license chec
  m={id:1n,owner:owner.address,cid:result.cid,modelHash:result.modelHash};
  assert.equal((await fetch(api+'/api/models/1/download')).status,401);
  assert.equal((await fetch(api+'/api/models/1/download',{headers:buyerHeaders})).status,403);
+ assert.equal((await fetch(api+'/api/models/1/download?licensed=true',{headers:buyerHeaders})).status,403);
+ assert.equal((await fetch(api+'/api/models/0/download',{headers:buyerHeaders})).status,400);
+ assert.equal((await fetch(api+'/api/models/1/download',{headers:ownerHeaders})).status,200);
+ const metadata=await(await fetch(api+'/api/models/1/metadata')).json();assert.equal(metadata.wrappedKey,undefined);
  licensed=true;
  const download=await fetch(api+'/api/models/1/download',{headers:buyerHeaders});assert.equal(download.status,200);assert.deepEqual(Buffer.from(await download.arrayBuffer()),bytes);
  m.modelHash='0'.repeat(64);assert.equal((await fetch(api+'/api/models/1/download',{headers:buyerHeaders})).status,409);

@@ -12,5 +12,7 @@ const chain=new Contract(CONTRACT_ADDRESS,[
  'function hasLicense(uint256,address) view returns(bool)'
 ],provider);
 const directory=`${process.env.DATA_DIR||'./data'}/${CHAIN_ID}-${CONTRACT_ADDRESS.toLowerCase()}`;
-const storage=createStorage({directory,masterKey:MODEL_MASTER_KEY,pinataJwt:PINATA_JWT,production:process.env.NODE_ENV==='production'});
+if(process.env.NODE_ENV==='production' && new URL(CLIENT_ORIGIN).protocol!=='https:') throw new Error('Production CLIENT_ORIGIN must use HTTPS');
+if(process.env.IPFS_GATEWAY && new URL(process.env.IPFS_GATEWAY).protocol!=='https:') throw new Error('IPFS_GATEWAY must use HTTPS');
+const storage=createStorage({directory,masterKey:MODEL_MASTER_KEY,pinataJwt:PINATA_JWT,gateway:process.env.IPFS_GATEWAY,production:process.env.NODE_ENV==='production'});
 createApp({chain,storage,origin:CLIENT_ORIGIN,chainId:CHAIN_ID,contractAddress:CONTRACT_ADDRESS}).listen(Number(process.env.PORT||4000),process.env.HOST||'127.0.0.1',()=>console.log('MontAI access API ready'));

@@ -28,16 +28,16 @@ export function createApp({chain,storage,origin,chainId,contractAddress}) {
   app.get('/health',async(req,res)=>{ await chain.getModelCount(); res.json({status:'ok',chainId,contractAddress}); });
   app.post('/api/auth/challenge',(req,res)=>{
     clean();
-    if(!isAddress(req.body.address)) return res.status(400).json({error:'Invalid wallet'});
+    if(!isAddress(req.body?.address)) return res.status(400).json({error:'Invalid wallet'});
     const nonce=randomBytes(24).toString('hex');
     const message=`MontAI wallet authentication\nOrigin: ${origin}\nChain: ${chainId}\nContract: ${contractAddress}\nWallet: ${req.body.address.toLowerCase()}\nNonce: ${nonce}\nExpires: ${new Date(Date.now()+300000).toISOString()}`;
     challenges.set(nonce,{address:req.body.address.toLowerCase(),message,expires:Date.now()+300000});
     res.json({nonce,message});
   });
   app.post('/api/auth/session',(req,res)=>{
-    clean(); const challenge=challenges.get(req.body.nonce); challenges.delete(req.body.nonce);
+    clean(); const challenge=challenges.get(req.body?.nonce); challenges.delete(req.body?.nonce);
     try {
-      if(!challenge || verifyMessage(challenge.message,req.body.signature).toLowerCase()!==challenge.address) throw new Error();
+      if(!challenge || verifyMessage(challenge.message,req.body?.signature).toLowerCase()!==challenge.address) throw new Error();
       const token=randomBytes(32).toString('hex'); sessions.set(token,{address:challenge.address,expires:Date.now()+3600000});
       res.json({token,address:challenge.address});
     } catch { res.status(401).json({error:'Invalid or expired signature'}); }

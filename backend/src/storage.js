@@ -13,7 +13,7 @@ function open(bytes, key) {
   cipher.setAuthTag(bytes.subarray(-16));
   return Buffer.concat([cipher.update(bytes.subarray(12,-16)), cipher.final()]);
 }
-export function createStorage({directory, masterKey, pinataJwt, gateway = 'https://gateway.pinata.cloud/ipfs', production = false}) {
+export function createStorage({directory, masterKey, pinataJwt, gateway = 'https://gateway.pinata.cloud/ipfs', production = false, fetchImpl = fetch}) {
   if (!/^[a-f0-9]{64}$/i.test(masterKey || '')) throw new Error('MODEL_MASTER_KEY must be 32 random bytes encoded as 64 hex characters');
   if (production && !pinataJwt) throw new Error('Production requires PINATA_JWT');
   const key = Buffer.from(masterKey,'hex');
@@ -28,8 +28,8 @@ export function createStorage({directory, masterKey, pinataJwt, gateway = 'https
       if (pinataJwt) {
         const form = new FormData();
         form.append('file',new Blob([ciphertext]),'model.enc');
-        const response = await fetch('https://api.pinata.cloud/pinning/pinFileToIPFS',{method:'POST',headers:{Authorization:`Bearer ${pinataJwt}`},body:form,signal:AbortSignal.timeout(60000)});
-        if (!response.ok) throw new Error('IPFS pinning failed');
+        const response = await fetchImpl('https://api.pinata.cloud/pinning/pinFileToIPFS',{method:'POST',headers:{Authorization:`Bearer ${pinataJwt}`},body:form,signal:AbortSignal.timeout(60000)});
+        if (!response.ok) throw new Error(`IPFS pinning failed (HTTP ${response.status})`);
         cid = safeCid((await response.json()).IpfsHash);
       }
       const record = {cid, modelHash:digest(bytes), encryptedHash:digest(ciphertext), owner:owner.toLowerCase(), ...metadata, wrappedKey:seal(fileKey,key).toString('base64')};
@@ -44,9 +44,13 @@ export function createStorage({directory, masterKey, pinataJwt, gateway = 'https
       try { ciphertext = await readFile(path.join(directory,safeCid(record.cid)+'.enc')); }
       catch (error) {
         if(error.code !== 'ENOENT' || record.cid.startsWith('local-')) throw error;
-        const response = await fetch(`${gateway.replace(/\/$/,'')}/${safeCid(record.cid)}`,{signal:AbortSignal.timeout(60000)});
+        const response = await fetchImpl(`${gateway.replace(/\/$/,'')}/${safeCid(record.cid)}`,{signal:AbortSignal.timeout(60000)});
         if(!response.ok) throw new Error('Encrypted content unavailable');
-        ciphertext = Buffer.from(await response.arrayBuffer());
+        const limit=25*1024*1024+28;
+        if(Number(response.headers.get('content-length'))>limit) throw new Error('Encrypted content exceeds size limit');
+        const chunks=[];let size=0;
+        for await(const chunk of response.body){size+=chunk.length;if(size>limit)throw new Error('Encrypted content exceeds size limit');chunks.push(Buffer.from(chunk));}
+        ciphertext = Buffer.concat(chunks);
       }
       if(digest(ciphertext)!==record.encryptedHash) throw new Error('Ciphertext integrity failed');
       const plaintext = open(ciphertext,open(Buffer.from(record.wrappedKey,'base64'),key));
