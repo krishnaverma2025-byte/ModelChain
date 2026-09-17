@@ -1,5 +1,6 @@
 import { BrowserProvider, Contract, JsonRpcProvider, isAddress } from 'ethers';
-export const config={rpc:import.meta.env.VITE_RPC_URL||'http://127.0.0.1:8545',chainId:BigInt(import.meta.env.VITE_CHAIN_ID||31337),address:import.meta.env.VITE_CONTRACT_ADDRESS||'',api:import.meta.env.VITE_API_URL||'http://127.0.0.1:4000'};
+const production=import.meta.env.PROD;
+export const config={rpc:import.meta.env.VITE_RPC_URL||(production?'':'http://127.0.0.1:8545'),chainId:BigInt(import.meta.env.VITE_CHAIN_ID||(production?0:31337)),address:import.meta.env.VITE_CONTRACT_ADDRESS||'',api:import.meta.env.VITE_API_URL||(production?'':'http://127.0.0.1:4000')};
 export const ABI=[
  'function getModelCount() view returns(uint256)',
  'function getModel(uint256) view returns(tuple(uint256 id,address owner,string name,string cid,string modelHash,uint256 price,uint256 royalty,bool active))',
@@ -12,6 +13,8 @@ export const ABI=[
  'event ModelRegistered(uint256 indexed modelId,address indexed owner,string name,string cid,uint256 price)'
 ];
 export async function readContract(){
+ if(!config.rpc || config.chainId<=0n) throw new Error('Configure VITE_RPC_URL and VITE_CHAIN_ID for this deployment.');
+ if(production && config.chainId!==31337n && new URL(config.rpc).protocol!=='https:') throw new Error('Public-network RPC must use HTTPS.');
  if(!isAddress(config.address)) throw new Error('Set VITE_CONTRACT_ADDRESS to your deployed ModelChain address.');
  const provider=new JsonRpcProvider(config.rpc);
  if((await provider.getNetwork()).chainId!==config.chainId) throw new Error('Configured RPC is on the wrong network.');
@@ -29,6 +32,8 @@ export async function wallet(){
  return {signer,address,contract:new Contract(config.address,ABI,signer)};
 }
 export async function api(path,options={}){
+ if(!config.api) throw new Error('Configure VITE_API_URL for model access.');
+ if(production && config.chainId!==31337n && new URL(config.api).protocol!=='https:') throw new Error('Public model access API must use HTTPS.');
  const response=await fetch(config.api+path,options);
  if(!response.ok){let data;try{data=await response.json();}catch{data={error:'Access API unavailable'};}throw new Error(data.error);}
  return response;

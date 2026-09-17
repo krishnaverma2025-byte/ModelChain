@@ -30,6 +30,7 @@ export default defineConfig({
   networks: {
     localhost: {
       type: "http",
+      chainId: 31337,
       url: process.env.RPC_URL || "http://127.0.0.1:8545",
     },
     hardhatMainnet: {
@@ -44,6 +45,7 @@ export default defineConfig({
 
     sepolia: {
       type: "http",
+      chainId: 11155111,
       chainType: "l1",
       url: configVariable("SEPOLIA_RPC_URL"),
       accounts: [configVariable("SEPOLIA_PRIVATE_KEY")],

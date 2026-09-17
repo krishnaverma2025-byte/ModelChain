@@ -1,7 +1,7 @@
 // Isolated local integration test. Never uses a funded wallet or public network.
 import { chromium } from '@playwright/test';
 import { ContractFactory, JsonRpcProvider } from 'ethers';
-import { spawn } from 'node:child_process';
+import { spawn, execFileSync } from 'node:child_process';
 import { mkdtemp, readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { resolve, dirname } from 'node:path';
@@ -29,6 +29,9 @@ try {
  await ready(rpc,nodeLog);
  const provider=new JsonRpcProvider(rpc);
  const creator=await provider.getSigner(0), buyer=await provider.getSigner(1);
+ const nonce=await provider.send('eth_getTransactionCount',[await creator.getAddress(),'latest']);
+ execFileSync(resolve(root,'node_modules/.bin/hardhat'),['run','scripts/deploy.ts','--network','localhost'],{cwd:root,env:{...process.env,RPC_URL:rpc,MONTAI_DEPLOY_DRY_RUN:'1'},stdio:'pipe'});
+ assert.equal(await provider.send('eth_getTransactionCount',[await creator.getAddress(),'latest']),nonce,'Deployment preflight sent a transaction');
  const artifact=JSON.parse(await readFile(resolve(root,'artifacts/contracts/ModelChain.sol/ModelChain.json'),'utf8'));
  const contract=await new ContractFactory(artifact.abi,artifact.bytecode,creator).deploy();await contract.waitForDeployment();
  const address=await contract.getAddress();
