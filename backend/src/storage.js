@@ -27,10 +27,12 @@ export function createStorage({directory, masterKey, pinataJwt, gateway = 'https
       let cid = 'local-'+digest(ciphertext);
       if (pinataJwt) {
         const form = new FormData();
+        // Public IPFS carries authenticated ciphertext only, never model bytes or keys.
+        form.append('network','public');
         form.append('file',new Blob([ciphertext]),'model.enc');
-        const response = await fetchImpl('https://api.pinata.cloud/pinning/pinFileToIPFS',{method:'POST',headers:{Authorization:`Bearer ${pinataJwt}`},body:form,signal:AbortSignal.timeout(60000)});
+        const response = await fetchImpl('https://uploads.pinata.cloud/v3/files',{method:'POST',headers:{Authorization:`Bearer ${pinataJwt}`},body:form,signal:AbortSignal.timeout(60000)});
         if (!response.ok) throw new Error(`IPFS pinning failed (HTTP ${response.status})`);
-        cid = safeCid((await response.json()).IpfsHash);
+        cid = safeCid((await response.json()).data?.cid);
       }
       const record = {cid, modelHash:digest(bytes), encryptedHash:digest(ciphertext), owner:owner.toLowerCase(), ...metadata, wrappedKey:seal(fileKey,key).toString('base64')};
       // Local ciphertext cache and encrypted key records must be backed up together.

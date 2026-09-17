@@ -13,10 +13,12 @@ test('IPFS receives ciphertext only; wrapped keys survive restart; tampering fai
  const cid='bafybeiencryptedtestidentifier';
  const fetchImpl=async(url,options)=>{
    if(options.method==='POST'){
+     assert.equal(url,'https://uploads.pinata.cloud/v3/files');
+     assert.equal(options.body.get('network'),'public');
      assert.equal(options.body.get('file').name,'model.enc');
      pinned=Buffer.from(await options.body.get('file').arrayBuffer());
      assert.equal(pinned.includes(bytes),false);
-     return Response.json({IpfsHash:cid});
+     return Response.json({data:{cid}});
    }
    return new Response(pinned);
  };
