@@ -1,986 +1,108 @@
-# MontAI
+# MontAI — Discover → License → Access → Verify
 
-## Decentralized AI Model Marketplace
+MontAI is an academic AI-model marketplace implemented with React, Ethereum smart contracts, encrypted IPFS storage and a Node.js access API. The core creator/buyer lifecycle works locally. Public deployment has not been performed.
 
-> **Discover. License. Verify.**
+## Implemented architecture
 
-MontAI is a blockchain-powered marketplace for AI models. It allows
-creators to register AI models, define licensing terms, and make models
-available to buyers through blockchain-based licensing.
+- **ModelChain (Solidity):** authoritative 1-based model IDs, creator, name, storage CID, original hash, price, creator-share percentage, active state and wallet licenses.
+- **React + ethers:** public catalogue reads through the configured RPC; MetaMask signs registration, purchases and withdrawals with the selected wallet.
+- **Node.js access API:** authenticates wallet signatures, independently checks on-chain ownership/licenses, and decrypts authorized downloads. It does not trust browser license flags.
+- **Pinata V3 / IPFS:** stores only AES-256-GCM ciphertext. Public knowledge of the CID provides ciphertext, not plaintext or keys.
+- **Protected backend volume:** stores ciphertext cache, description/category metadata and per-file keys wrapped by MODEL_MASTER_KEY.
+- **Supabase (optional):** login, profiles and avatars only. It is not authoritative for models, prices, ownership or licenses. Core wallet E2E runs with Supabase disabled.
 
-The project combines **React, Solidity, Hardhat, ethers.js, MetaMask,
-IPFS, and Supabase**.
+This is decentralized registration/licensing with a server-operated key-delivery service, not a fully decentralized access system.
 
-------------------------------------------------------------------------
+## Creator flow
 
-## 1. Overview
+Connect MetaMask → choose a supported model file (maximum 25 MB) and metadata → sign a free wallet-authentication challenge → backend hashes original bytes and encrypts the file with a random per-file key → upload ciphertext to Pinata V3 → receive CID and original SHA-256 → browser confirms the original hash → register CID/hash/price/share on-chain → await the registration receipt and read its model ID → open Details.
 
-MontAI separates the application into three main layers:
+Supported extensions are ZIP, ONNX, PT, PKL, BIN and SAFETENSORS. Files are never loaded as code or executed by the server. Rejected registrations can leave orphan encrypted uploads; they are not automatically deleted because a submitted transaction may still confirm.
 
-``` text
-                    MONT AI
-                       |
-        +--------------+--------------+
-        |              |              |
-        v              v              v
-   BLOCKCHAIN        IPFS         SUPABASE
-        |              |              |
-        v              v              v
- Ownership         Model Files     User/App
- Licensing         & Metadata      Information
- Payments
- Verification
-```
-
-The actual AI model is **not stored directly on the blockchain**. Large
-model files are intended to be stored on IPFS. The blockchain stores the
-model's CID, hash, ownership, price, royalty and licensing state.
-
-------------------------------------------------------------------------
-
-## 2. Problem
-
-AI creators need a reliable way to publish and license models while
-buyers need transparent information about ownership, pricing and
-licensing.
-
-Traditional centralized approaches can create problems such as:
-
--   unclear ownership
--   centralized control
--   manual licensing
--   limited payment transparency
--   difficult integrity verification
--   high blockchain storage costs for large files
-
-MontAI addresses these issues by using blockchain for trust and
-licensing, IPFS for large files, and Supabase for application-level
-data.
-
-------------------------------------------------------------------------
-
-## 3. Solution
-
-### Blockchain
-
-The `ModelChain` smart contract stores:
-
--   Model ID
--   Owner
--   Model name
--   IPFS CID
--   Model hash
--   Price
--   Royalty
--   Active status
--   License information
-
-### IPFS
-
-The actual model file is stored off-chain:
-
-``` text
-AI Model
-   |
-   v
- IPFS
-   |
-   v
- CID
-   |
-   v
-ModelChain
-```
-
-### Supabase
-
-Supabase supports application-level information such as:
-
--   user profiles
--   authentication/application data
--   supporting UI metadata where appropriate
-
-Blockchain-owned information should remain sourced from the blockchain.
-
-------------------------------------------------------------------------
-
-## 4. Final Vision
-
-``` text
-                 +----------------+
-                 |     MontAI     |
-                 +-------+--------+
-                         |
-          +--------------+--------------+
-          |              |              |
-          v              v              v
-       DISCOVER        LICENSE        VERIFY
-          |              |              |
-          v              v              v
-     Marketplace     MetaMask       Model Hash
-          |              |              |
-          v              v              v
-    Model Details    Blockchain      Integrity
-```
-
-The goal is a complete marketplace where:
-
-``` text
-Creator
-  |
-  +--> Upload AI model
-  |
-  +--> Store file on IPFS
-  |
-  +--> Generate CID
-  |
-  +--> Calculate hash
-  |
-  +--> Register on ModelChain
-  |
-  v
-Marketplace
-  |
-  +--> Buyer views model
-  |
-  +--> Buyer connects MetaMask
-  |
-  +--> Buyer purchases license
-  |
-  +--> Blockchain records license
-  |
-  v
-Licensed model access + integrity verification
-```
-
-------------------------------------------------------------------------
-
-## 5. Architecture
-
-``` text
-                         +----------------------+
-                         |        USER          |
-                         | Creator / Buyer      |
-                         +----------+-----------+
-                                    |
-                                    v
-                         +----------------------+
-                         |       MontAI         |
-                         |    React Frontend    |
-                         +----------+-----------+
-                                    |
-             +----------------------+----------------------+
-             |                      |                      |
-             v                      v                      v
-       +-----------+          +-----------+          +-----------+
-       | MetaMask  |          | Supabase  |          |   IPFS    |
-       |  Wallet   |          | App Data  |          | Model     |
-       +-----+-----+          +-----------+          | Files     |
-             |                                      +-----+-----+
-             v                                            |
-       +--------------------------------------------------+
-       |                  ModelChain                      |
-       |                                                  |
-       | Model ID | Owner | Name | CID | Hash            |
-       | Price | Royalty | Active | License State        |
-       +------------------------+-------------------------+
-                                |
-                                v
-                         EVM Blockchain
-```
-
-------------------------------------------------------------------------
-
-## 6. Technology Stack
-
-  Layer                Technology         Purpose
-  -------------------- ------------------ -----------------------
-  Frontend             React              User interface
-  Routing              React Router       Navigation
-  Styling              CSS                UI/UX
-  Blockchain           Solidity           Smart contract
-  Blockchain tooling   Hardhat            Development/testing
-  Blockchain client    ethers.js          Contract interaction
-  Wallet               MetaMask           Signing transactions
-  Storage              IPFS               AI model files
-  Backend              Supabase           User/application data
-  Language             JavaScript / JSX   Frontend
-
-------------------------------------------------------------------------
-
-## 7. Smart Contract
-
-### ModelChain
-
-Current local development contract:
-
-``` text
-Address:
-0x5FbDB2315678afecb367f032d93F642f64180aa3
-
-Network:
-Hardhat localhost
-
-Chain ID:
-31337
-
-RPC:
-http://127.0.0.1:8545
-```
-
-> This is a local development deployment. A production/testnet
-> deployment will use a different contract address and network.
-
-### Model structure
-
-``` text
-Model
- |
- +-- id
- +-- owner
- +-- name
- +-- cid
- +-- modelHash
- +-- price
- +-- royalty
- +-- active
-```
-
-### Main functions
-
-``` text
-registerModel()
-getModel()
-getModelCount()
-purchaseLicense()
-hasLicense()
-verifyModel()
-```
-
-------------------------------------------------------------------------
-
-## 8. Blockchain Flow
-
-### Registration
-
-``` text
-Creator
-   |
-   v
-Model metadata
-   |
-   +--> IPFS CID
-   |
-   +--> Model hash
-   |
-   +--> Price
-   |
-   +--> Royalty
-   |
-   v
-registerModel()
-   |
-   v
-ModelChain
-   |
-   v
-Model ID
-```
-
-### Licensing
-
-``` text
-Buyer
-  |
-  v
-Model Details
-  |
-  v
-MetaMask
-  |
-  v
-purchaseLicense(modelId)
-  |
-  v
-ETH payment
-  |
-  v
-Blockchain confirmation
-  |
-  v
-hasLicense() = true
-```
-
-------------------------------------------------------------------------
-
-## 9. IPFS Architecture
-
-Large AI model files are not stored directly on Ethereum.
-
-Instead:
-
-``` text
-model.zip
-    |
-    v
-   IPFS
-    |
-    v
-QmExampleCID...
-    |
-    v
-ModelChain
-```
-
-The CID is stored on-chain as the model's content reference.
-
-### Important
-
-A CID is **not a password**.
-
-If an unencrypted file is publicly retrievable through IPFS, anyone who
-obtains the CID may be able to retrieve it. Therefore, licensed model
-access must use an appropriate encryption/access-control design if the
-model is not intended to be publicly downloadable.
-
-MontAI should not claim that blockchain licensing alone makes an
-unencrypted IPFS file private.
-
-------------------------------------------------------------------------
-
-## 10. Integrity Verification
-
-MontAI uses a model hash to help verify that a downloaded file matches
-the registered content.
-
-``` text
-              ORIGINAL MODEL
-                    |
-                    v
-                SHA-256
-                    |
-                    v
-             Blockchain Hash
-                    |
-                    |
-             Download Model
-                    |
-                    v
-                SHA-256
-                    |
-                    v
-             Compare Hashes
-               /                     /                   MATCH       DIFFERENT
-            |             |
-            v             v
-        VERIFIED      NOT VERIFIED
-```
-
-------------------------------------------------------------------------
-
-## 11. User Flows
-
-### Creator
-
-``` text
-Connect Wallet
-      |
-      v
-Upload Model
-      |
-      v
-IPFS
-      |
-      v
-CID + Hash
-      |
-      v
-Enter metadata
-      |
-      v
-Set price + royalty
-      |
-      v
-Register on ModelChain
-      |
-      v
-Marketplace listing
-```
-
-### Buyer
-
-``` text
-Marketplace
-      |
-      v
-Select Model
-      |
-      v
-View Details
-      |
-      v
-Connect MetaMask
-      |
-      v
-Purchase License
-      |
-      v
-Blockchain Confirmation
-      |
-      v
-Licensed Access
-```
-
-------------------------------------------------------------------------
-
-## 12. Frontend Pages
-
-### Home
-
-Introduces MontAI and the decentralized AI marketplace.
-
-### Marketplace
-
-Displays AI models available for licensing.
-
-Expected model card information:
-
--   name
--   description
--   category
--   creator
--   price
--   license state
--   details link
-
-### Details
-
-Displays blockchain-backed information:
-
--   Model ID
--   creator
--   price
--   royalty
--   CID
--   model hash
--   license status
--   purchase action
-
-### Upload Model
-
-Expected workflow:
-
-``` text
-Select file
- -> Upload to IPFS
- -> Generate CID
- -> Calculate hash
- -> Enter metadata
- -> Set price
- -> Set royalty
- -> Register on blockchain
-```
-
-### Dashboard
-
-Shows:
-
-``` text
-My Models
-Licensed Models
-Model ID
-Price
-Royalty
-Status
-```
-
-### Profile
-
-Provides application-level profile information.
-
-------------------------------------------------------------------------
-
-## 13. Repository Structure
-
-``` text
-BlockChain_Project/
-|
-+-- contracts/
-|   +-- ModelChain.sol
-|
-+-- scripts/
-|   +-- deployment / interaction scripts
-|
-+-- test/
-|   +-- smart contract tests
-|
-+-- hardhat.config.*
-+-- package.json
-|
-+-- frontend/
-    |
-    +-- src/
-    |   +-- assets/
-    |   +-- components/
-    |   +-- pages/
-    |   |   +-- Home.jsx
-    |   |   +-- Marketplace.jsx
-    |   |   +-- Details.jsx
-    |   |   +-- UploadModel.jsx
-    |   |   +-- Dashboard.jsx
-    |   |   +-- Profile.jsx
-    |   |   +-- Login.jsx
-    |   |   +-- Signup.jsx
-    |   |
-    |   +-- App.jsx
-    |   +-- main.jsx
-    |   +-- supabaseClient.js
-    |
-    +-- package.json
-```
-
-------------------------------------------------------------------------
-
-## 14. Local Setup
-
-### Install blockchain dependencies
-
-``` bash
-npm install
-```
-
-### Install frontend dependencies
-
-``` bash
-cd frontend
-npm install
-```
-
-### Start Hardhat
-
-``` bash
-npx hardhat node
-```
-
-### Deploy locally
-
-Use the project's deployment script.
-
-After deployment, update the frontend contract configuration with the
-deployed address.
-
-### Start frontend
-
-``` bash
-cd frontend
-npm run dev
-```
-
-### Hardhat console
-
-``` bash
-npx hardhat console --network localhost
-```
-
-Example:
-
-``` javascript
-const { ethers } = await network.connect();
-
-const contract = await ethers.getContractAt(
-  "ModelChain",
-  "0x5FbDB2315678afecb367f032d93F642f64180aa3"
-);
-```
-
-Check model count:
-
-``` javascript
-await contract.getModelCount()
-```
-
-Retrieve model 1:
-
-``` javascript
-await contract.getModel(1)
-```
-
-Check license:
-
-``` javascript
-await contract.hasLicense(1, "WALLET_ADDRESS")
-```
-
-Purchase a test license:
-
-``` javascript
-await contract.purchaseLicense(
-  1,
-  {
-    value: ethers.parseEther("0.01")
-  }
-)
-```
-
-These commands are for local testing only.
-
-------------------------------------------------------------------------
-
-## 15. Testing
-
-Run smart-contract tests:
-
-``` bash
-npx hardhat test
-```
-
-The project should verify:
-
-``` text
-[ ] Model registration
-[ ] Model retrieval
-[ ] Model count
-[ ] License purchase
-[ ] License ownership
-[ ] Payment validation
-[ ] Duplicate license handling
-[ ] Ownership restrictions
-[ ] Royalty/payment logic
-[ ] Model verification
-[ ] Invalid model handling
-```
-
-Frontend end-to-end testing should verify:
-
-``` text
-[ ] Marketplace
-[ ] Model Details
-[ ] Wallet connection
-[ ] MetaMask purchase
-[ ] Transaction confirmation
-[ ] Already licensed state
-[ ] Upload flow
-[ ] IPFS CID
-[ ] Hash generation
-[ ] Hash verification
-[ ] Dashboard
-[ ] Routing
-[ ] Loading/error states
-```
-
-------------------------------------------------------------------------
-
-## 16. Security
-
-Before production deployment, audit:
-
-### Smart contract
-
--   Access control
--   Ownership checks
--   Payment validation
--   Reentrancy risks
--   Duplicate purchases
--   Royalty distribution
--   Unauthorized modifications
--   Input validation
--   State transitions
-
-### Frontend
-
-Never commit:
-
-``` text
-Private keys
-Seed phrases
-Supabase service-role keys
-Server-side secrets
-```
-
-Never ask users for private keys.
-
-MetaMask should handle transaction signing.
-
-### Network
-
-The application must correctly handle:
-
--   wrong network
--   wrong chain ID
--   wrong contract address
--   rejected transactions
--   disconnected wallet
--   unavailable RPC
--   reverted transactions
-
-------------------------------------------------------------------------
-
-## 17. Production Deployment
-
-The current development environment is:
-
-``` text
-React
-   |
-   +--> Hardhat localhost
-   |      Chain ID 31337
-   |
-   +--> Local Supabase configuration
-   |
-   +--> IPFS development configuration
-```
-
-The intended production architecture is:
-
-``` text
-                       INTERNET
-                          |
-                          v
-                  +---------------+
-                  | MontAI Frontend|
-                  +-------+-------+
-                          |
-          +---------------+---------------+
-          |               |               |
-          v               v               v
-      MetaMask        Supabase          IPFS
-          |               |               |
-          v               |               |
-   Production/Testnet    App Data      Model Files
-          |
-          v
-     ModelChain
-          |
-          v
-    EVM Blockchain
-```
-
-Production configuration should be environment-based.
-
-Typical public configuration values may include:
-
-``` text
-VITE_CONTRACT_ADDRESS
-VITE_RPC_URL
-VITE_CHAIN_ID
-VITE_SUPABASE_URL
-VITE_SUPABASE_ANON_KEY
-IPFS configuration
-```
-
-Never expose private server credentials in browser-side environment
-variables.
-
-------------------------------------------------------------------------
-
-## 18. Deployment Checklist
-
-``` text
-[ ] Contract security reviewed
-[ ] Contract tests passing
-[ ] Frontend build passing
-[ ] Production/testnet contract deployed
-[ ] Contract address configured
-[ ] Network configuration updated
-[ ] IPFS provider configured
-[ ] Upload tested
-[ ] CID storage tested
-[ ] Hash generation tested
-[ ] Verification tested
-[ ] MetaMask tested
-[ ] License purchase tested
-[ ] Incorrect payment tested
-[ ] Duplicate purchase tested
-[ ] Owner restrictions tested
-[ ] Supabase production configured
-[ ] No secrets committed
-[ ] No private keys committed
-[ ] No localhost dependency remains
-[ ] No hardcoded model ID assumptions
-[ ] Dummy data removed from production
-[ ] Responsive UI tested
-[ ] Console errors removed
-[ ] Production build tested
-```
-
-------------------------------------------------------------------------
-
-## 19. Development Roadmap
-
-``` text
-PHASE 1
-Core Blockchain
-    |
-    +-- Model registration
-    +-- Model retrieval
-    +-- Licensing
-    +-- License verification
-    |
-    v
-PHASE 2
-Frontend Integration
-    |
-    +-- Marketplace
-    +-- Details
-    +-- MetaMask
-    +-- Dashboard
-    |
-    v
-PHASE 3
-IPFS + Verification
-    |
-    +-- File upload
-    +-- CID
-    +-- Hash
-    +-- Verification
-    |
-    v
-PHASE 4
-UI/UX
-    |
-    +-- Marketplace redesign
-    +-- Details redesign
-    +-- Upload redesign
-    +-- Dashboard redesign
-    |
-    v
-PHASE 5
-Security + Testing
-    |
-    +-- Contract audit
-    +-- End-to-end testing
-    +-- IPFS access review
-    |
-    v
-PHASE 6
-Deployment
-    |
-    +-- Production blockchain
-    +-- Production IPFS
-    +-- Supabase
-    +-- Public frontend
-```
-
-------------------------------------------------------------------------
-
-## 20. Current Status
-
-### Working locally
-
--   [x] Hardhat blockchain
--   [x] ModelChain contract
--   [x] Model registration
--   [x] Model retrieval
--   [x] Model count
--   [x] License purchase
--   [x] License ownership check
--   [x] ethers.js integration
--   [x] MetaMask transaction flow
--   [x] React Marketplace
--   [x] React Details page
--   [x] Supabase integration
--   [x] Dashboard/application structure
-
-### In progress
-
--   [ ] Complete IPFS upload integration
--   [ ] Upload-to-blockchain flow
--   [ ] Fully dynamic blockchain marketplace
--   [ ] Remove production dummy models
--   [ ] Dynamic model ID handling
--   [ ] Model hash verification
--   [ ] Licensed model access design
--   [ ] UI/UX redesign
--   [ ] Production configuration
-
-### Before going live
-
--   [ ] Security audit
--   [ ] Full end-to-end testing
--   [ ] Production/testnet deployment
--   [ ] Production IPFS
--   [ ] Supabase production
--   [ ] Frontend hosting
--   [ ] Final deployment verification
-
-------------------------------------------------------------------------
-
-## 21. Design Principles
-
-MontAI follows this separation:
-
-``` text
-+--------------------------------+
-|          BLOCKCHAIN            |
-|                                |
-| Ownership                      |
-| Model ID                       |
-| Price                          |
-| Royalty                        |
-| CID                            |
-| Model Hash                     |
-| License State                  |
-+--------------------------------+
-
-+--------------------------------+
-|              IPFS              |
-|                                |
-| Actual AI Model Files          |
-| Large Model Data               |
-+--------------------------------+
-
-+--------------------------------+
-|           SUPABASE             |
-|                                |
-| User Profiles                  |
-| Application Data               |
-| Supporting UI Metadata         |
-+--------------------------------+
-```
-
-The blockchain is focused on **trust and licensing**.
-
-IPFS is focused on **large-file storage**.
-
-Supabase is focused on **application-level data**.
-
-------------------------------------------------------------------------
-
-## 22. Final Vision
-
-``` text
-                    +----------------+
-                    |     MONT AI     |
-                    +--------+-------+
-                             |
-              +--------------+--------------+
-              |              |              |
-              v              v              v
-           DISCOVER        LICENSE        VERIFY
-              |              |              |
-              v              v              v
-         Marketplace     MetaMask       SHA-256
-              |              |              |
-              v              v              v
-         Model Details   Blockchain      Integrity
-              |              |              |
-              +--------------+--------------+
-                             |
-                             v
-                  DECENTRALIZED AI
-                     MARKETPLACE
-```
-
-### In one sentence
-
-> **MontAI is a decentralized AI marketplace that uses blockchain for
-> ownership and licensing, IPFS for model storage, and cryptographic
-> hashes for model integrity verification.**
-
-------------------------------------------------------------------------
+## Buyer flow
+
+Discover active blockchain models → open Details → connect MetaMask → purchase with the current signer and exact on-chain price → await the transaction receipt → verify the receipt buyer/contract and fresh hasLicense results on the wallet and configured RPC → show License Owned.
+
+Protected download independently obtains the current signer, validates the backend chain/contract, signs a one-use challenge and verifies signature ownership. The server recovers that wallet and checks its on-chain license (or creator ownership) before retrieving/decrypting the model. The browser hashes the delivered original bytes and blocks saving a mismatch. Account/network changes invalidate pending UI work; another wallet's successful transaction cannot populate the current wallet's license state.
+
+## Payments and listing behavior
+
+The royalty field is the **creator share of each sale**, in whole percent. The remainder is credited to the platform, which is the deploying wallet. All received license proceeds are assigned to withdrawal balances. Withdrawals zero the balance before the external transfer and revert atomically if delivery fails.
+
+Creators cannot purchase their own models; duplicate purchases, wrong payment, inactive sales and invalid model IDs are rejected. Creators retain download access. Deactivation prevents new sales but does not revoke existing licenses. Dashboard shows creator models, purchased licenses, and aggregate withdrawable revenue. Registrations are immutable; versions, resale royalties and legal usage rights are not separately modeled. RoyaltyPaid is a legacy event emitted when revenue is credited; RevenueWithdrawn records the actual payout.
+
+## Local setup
+
+Use the repository's supported Node 22 runtime and npm lockfiles. Full operational instructions are in [LOCAL_RUNBOOK.md](LOCAL_RUNBOOK.md).
+
+1. Install dependencies: run npm ci in the root, backend and frontend directories.
+2. Configure private environment files from their corresponding .env.example files. Keep the frontend/backend chain ID and contract address identical.
+3. For a **new local session**, start npm run node in the root, then npm run deploy:local in another terminal. Configure the printed contract address in the backend/frontend.
+4. Start npm start in backend and npm run dev in frontend. Use the frontend origin configured by CLIENT_ORIGIN.
+5. Connect disposable local MetaMask accounts. Register as creator, purchase as a different buyer, then download and verify.
+
+**When debugging an existing session, keep its node and deployment running.** Restarting the ephemeral chain removes registrations/licenses. Do not redeploy to fix wallet state. The read-only scripts/interact.ts utility requires explicit CONTRACT_ADDRESS and MODEL_ID and is restricted to local chain 31337.
+
+Without Pinata, development uses encrypted local storage with a local- identifier. Production requires Pinata. Live V3 encrypted upload → gateway retrieval → decryption has been verified separately using the existing credential; routine tests do not repeatedly upload fixtures.
+
+## Environment variable names
+
+| Component | Variables |
+|---|---|
+| Frontend chain/access | VITE_CHAIN_ID, VITE_CONTRACT_ADDRESS, VITE_RPC_URL, VITE_API_URL |
+| Optional profiles | VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY |
+| Backend chain | RPC_URL, CHAIN_ID, CONTRACT_ADDRESS |
+| Backend access/storage | CLIENT_ORIGIN, MODEL_MASTER_KEY, PINATA_JWT, IPFS_GATEWAY, DATA_DIR |
+| Backend process | HOST, PORT, NODE_ENV |
+| Sepolia deployment | SEPOLIA_RPC_URL, SEPOLIA_PRIVATE_KEY |
+| Deployment controls | MONTAI_DEPLOY_DRY_RUN, MONTAI_ALLOW_TESTNET_DEPLOYMENT |
+
+All VITE values are public browser configuration. Never place server secrets there. There is no SESSION_SECRET: sessions are random opaque tokens stored server-side in memory. Keep MODEL_MASTER_KEY and the protected storage records across backend restarts; losing either can lose model access.
+
+## Testing
+
+Run from the repository root:
+
+~~~sh
+npm run compile
+npm test
+npx tsc --noEmit
+npm test --prefix backend
+npm run lint --prefix frontend
+npm run build --prefix frontend
+npm run test:e2e --prefix frontend
+npm run security:scan -- --history
+npm audit --audit-level=high
+npm audit --prefix backend --audit-level=high
+npm audit --prefix frontend --audit-level=high
+~~~
+
+Install Chromium once from frontend with npx playwright install chromium. E2E uses a **separate** disposable local node/API/frontend on ports 18545/14000/15173 and does not touch the user's chain on 8545. Its wallet is an injected test provider; actual MetaMask prompts remain a manual acceptance step.
+
+Coverage includes creator restrictions, two independent buyers, unlicensed fourth-wallet denial, receipt/hasLicense checks, account changes during authentication, transaction/signature rejection, refresh recovery, backend signature ownership/replay/expiry, encrypted round-trips, tampered content, wrong network, invalid IDs, dashboard, failed payouts, withdrawal reentry and mobile layout. CI runs the local suite on feature pushes/PRs. A passing local run does not prove hosted CI or public-network operation.
+
+## Security model and limits
+
+Keys stay in protected backend records; no raw model or encryption key is sent to IPFS or chain. Signed challenges include wallet, nonce, expiry, origin, chain and contract. Sessions expire after one hour and are lost on API restart. Downloads are not cacheable. The API limits requests/uploads and binds stored CID/hash/creator to the on-chain record.
+
+Authorized buyers can copy decrypted files. Integrity verification proves byte equality, not model safety or accuracy. The API/key service and its protected persistent volume are trusted components. Use TLS and a single API replica unless a shared session store is implemented. Gateway downloads are size-bounded. The catalogue enumerates on-chain models and is intended for a small project; larger scale needs indexing/pagination.
+
+Current/history secret scanning checks known credential values and common patterns; it is not a guarantee against every possible secret format. Root development tooling retains low-severity transitive elliptic findings without an available upstream fix. Backend/frontend audits and all findings should be rechecked at release. This implementation has not received an independent production contract audit.
+
+## Sepolia preparation — no deployment yet
+
+Sepolia chain 11155111 uses environment-based RPC/deployer configuration. The deploying wallet becomes the platform payout recipient; confirm it before deployment. Never use Hardhat's development keys on public networks.
+
+After privately supplying configuration and test ETH, MONTAI_DEPLOY_DRY_RUN enables a preflight that reports chain, deployer and balance without sending a transaction. An actual Sepolia deployment additionally requires explicit user approval and the deployment control flag documented in the runbook. The script rejects unsupported chains and standard Hardhat accounts on Sepolia. After approval and deployment, propagate the emitted address to both frontend and backend and verify their health/configuration agreement. Hardhat verification tooling is already installed; explorer verification is a separate post-deployment check.
+
+Public testing still requires a funded dedicated deployer, Sepolia RPC, hosted HTTPS frontend/API, durable protected storage, real MetaMask acceptance, and optional production Supabase policies if profiles are enabled. No PR merge or public deployment is automatic.
+
+## Repository and review workflow
+
+Development is on feature branches. Main is reserved for reviewed stable work. PR #2 contains the original settlement/storage foundation; PR #3 includes that foundation plus the completed application and later hardening, including the Pinata V3 fix. PR #2 is therefore superseded as a standalone release candidate. Review its foundation first within PR #3, then merge PR #3 only after team approval; close #2 as superseded afterward. Alternatively, retain both review units by merging #2 then #3 with ordinary merge commits, without deploying the intermediate state. Neither PR has been merged by this agent.
+
+Generated bindings/build outputs and unrelated local instruction-file changes must not be accidentally bundled with feature commits.
 
 ## License
 
-This project is currently developed as an academic/project
-implementation. Add the final open-source or project-specific license
-before public distribution.
+This repository is an academic/team project. Confirm the intended distribution license and model-specific usage terms before public distribution.

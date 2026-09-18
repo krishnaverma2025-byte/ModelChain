@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { ethers } from "ethers";
 import "./UploadModel.css";
-import { supabase } from "../supabaseClient";
+import { wallet, assertCurrentWallet, authenticate, api, hashFile, errorText } from "../blockchain";
 
 function UploadModel() {
   const navigate = useNavigate();
 
+  const [royalty, setRoyalty] = useState("95");
   const [modelName, setModelName] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("Computer Vision");
@@ -22,117 +24,38 @@ function UploadModel() {
 
   const handleRegister = async (e) => {
     e.preventDefault();
-
-    setError("");
-    setMessage("");
-
-    // Basic validation
-    if (!modelName.trim()) {
-      setError("Please enter a model name.");
-      return;
+    setError(""); setMessage("");
+    if (!modelName.trim() || modelName.length > 160 || !modelFile || !/^\d+(\.\d{1,18})?$/.test(price) || ethers.parseEther(price) <= 0n || modelFile.size > 25 * 1024 * 1024) {
+      setError("Enter a name, positive ETH price and a model file up to 25 MB."); return;
     }
-
-    if (!description.trim()) {
-      setError("Please enter a description.");
-      return;
-    }
-
-    if (!modelFile) {
-      setError("Please select a model file.");
-      return;
-    }
-
-    if (!price || Number(price) < 0) {
-      setError("Please enter a valid license price.");
-      return;
-    }
-
+    if (!Number.isInteger(Number(royalty)) || Number(royalty)<0 || Number(royalty)>100) {setError("Creator share must be a whole percentage from 0 to 100.");return;}
     setLoading(true);
-
     try {
-      // 1. Get currently logged-in user
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser();
-
-      if (userError) {
-        throw userError;
-      }
-
-      if (!user) {
-        setError("You must be logged in to upload a model.");
-        setLoading(false);
-        return;
-      }
-
-      // 2. Create a unique file path
-      const fileExtension = modelFile.name.includes(".")
-        ? modelFile.name.split(".").pop()
-        : "";
-
-      const uniqueFileName = `${crypto.randomUUID()}${
-        fileExtension ? "." + fileExtension : ""
-      }`;
-
-      const filePath = `${user.id}/${uniqueFileName}`;
-
-      // 3. Upload actual model file to Supabase Storage
-      const { error: uploadError } = await supabase.storage
-        .from("models")
-        .upload(filePath, modelFile, {
-          cacheControl: "3600",
-          upsert: false,
-        });
-
-      if (uploadError) {
-        throw uploadError;
-      }
-
-      // 4. Save model information in database
-      const { error: databaseError } = await supabase
-        .from("models")
-        .insert([
-          {
-            owner_id: user.id,
-            name: modelName.trim(),
-            description: description.trim(),
-            category: category,
-            price_eth: Number(price),
-            file_path: filePath,
-            file_name: modelFile.name,
-          },
-        ]);
-
-      // If database insert fails, remove uploaded file
-      if (databaseError) {
-        await supabase.storage
-          .from("models")
-          .remove([filePath]);
-
-        throw databaseError;
-      }
-
-      // 5. Success
-      setMessage("Model registered successfully!");
-
-      // 6. Go to Dashboard after successful upload
-      setTimeout(() => {
-        navigate("/dashboard");
-      }, 1000);
-
-    } catch (err) {
-      console.error("Model upload error:", err);
-      setError(err.message || "Something went wrong while uploading the model.");
-    } finally {
-      setLoading(false);
-    }
+      const {signer, address, contract}=await wallet();
+      setMessage("Sign a free authentication message in MetaMask.");
+      const headers=await authenticate(signer);
+      const form=new FormData();
+      form.append("model",modelFile);form.append("name",modelName.trim());
+      form.append("description",description);form.append("category",category);
+      setMessage("Encrypting and storing your model off-chain…");
+      const uploaded=await(await api("/api/uploads",{method:"POST",headers,body:form})).json();
+      if(uploaded.modelHash !== await hashFile(modelFile)) throw new Error("Upload integrity mismatch.");
+      await assertCurrentWallet(address);
+      setMessage(uploaded.storage==="local"?"Development storage: encrypted local bytes. Confirm registration in MetaMask.":"Encrypted IPFS upload complete. Confirm registration in MetaMask.");
+      const tx=await contract.registerModel(modelName.trim(),uploaded.cid,uploaded.modelHash,ethers.parseEther(price),Number(royalty));
+      setMessage("Transaction submitted. Waiting for confirmation…");
+      const receipt=await tx.wait();
+      const event=receipt.logs.map(log=>{try{return contract.interface.parseLog(log);}catch{return null;}}).find(log=>log?.name==="ModelRegistered");
+      if(!event) throw new Error("Registration confirmed; refresh Marketplace to find your model.");
+      navigate("/model/"+event.args.modelId.toString());
+    } catch(err) {setError(errorText(err));}
+    finally {setLoading(false);}
   };
 
   return (
     <div className="upload-page">
-
       <main className="upload-content">
+        <p className="storage-note">Your model is encrypted off-chain: IPFS when configured, encrypted local storage in development. Blockchain stores its storage identifier, original SHA-256 hash, ownership and licensing information. Maximum file size: 25 MB.</p>
 
         <div className="section-label">
           LIST YOUR MODEL
@@ -158,7 +81,6 @@ function UploadModel() {
             />
           </div>
 
-
           <div className="form-group">
             <label>Description</label>
 
@@ -169,7 +91,6 @@ function UploadModel() {
               onChange={(e) => setDescription(e.target.value)}
             />
           </div>
-
 
           <div className="form-row">
 
@@ -187,7 +108,6 @@ function UploadModel() {
               </select>
             </div>
 
-
             <div className="form-group">
               <label>License Price (ETH)</label>
 
@@ -203,13 +123,14 @@ function UploadModel() {
 
           </div>
 
-
+          <div className="form-group"><label htmlFor="royalty">Creator share (%)</label><input id="royalty" type="number" min="0" max="100" step="1" value={royalty} onChange={e=>setRoyalty(e.target.value)}/><p>You receive this percentage of each sale; the platform receives the remainder.</p></div>
           <div className="form-group">
             <label>Model File</label>
 
             <div className="file-upload">
               <input
                 type="file"
+                accept=".zip,.onnx,.pt,.pkl,.bin,.safetensors"
                 onChange={handleFileChange}
               />
 
@@ -221,8 +142,6 @@ function UploadModel() {
             </div>
           </div>
 
-
-          {/* Success message */}
           {message && (
             <p
               style={{
@@ -235,8 +154,6 @@ function UploadModel() {
             </p>
           )}
 
-
-          {/* Error message */}
           {error && (
             <p
               style={{
@@ -249,19 +166,19 @@ function UploadModel() {
             </p>
           )}
 
-
           <button
             className="upload-button"
             onClick={handleRegister}
             disabled={loading}
           >
-            {loading ? "Uploading..." : "Register Model"}
+            {loading
+              ? "Registering..."
+              : "Register Model"}
           </button>
 
         </div>
 
       </main>
-
     </div>
   );
 }

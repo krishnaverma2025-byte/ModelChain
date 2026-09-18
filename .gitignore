@@ -1,4 +1,7 @@
 node_modules/
+backend/data/
+playwright-report/
+test-results/
 
 .env
 .env.*

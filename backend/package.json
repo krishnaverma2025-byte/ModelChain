@@ -1,0 +1,5 @@
+{
+  "name": "montai-access", "private": true, "type": "module",
+  "scripts": {"start":"node --env-file-if-exists=.env src/server.js", "test":"node --test test/*.test.js"},
+  "dependencies": {"express":"^5.1.0", "ethers":"^6.17.0", "multer":"^2.0.2", "helmet":"^8.1.0", "cors":"^2.8.5", "express-rate-limit":"^8.1.0"}
+}
