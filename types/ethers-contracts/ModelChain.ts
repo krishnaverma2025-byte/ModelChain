@@ -13,23 +13,31 @@ export declare namespace ModelChain {
     }
 
   export interface ModelChainInterface extends Interface {
-    getFunction(nameOrSignature: "getModel" | "getModelCount" | "hasLicense" | "purchaseLicense" | "registerModel" | "verifyModel"): FunctionFragment;
+    getFunction(nameOrSignature: "getModel" | "getModelCount" | "hasLicense" | "pendingWithdrawals" | "platform" | "purchaseLicense" | "registerModel" | "setModelActive" | "verifyModel" | "withdrawRevenue"): FunctionFragment;
 
-    getEvent(nameOrSignatureOrTopic: "LicensePurchased" | "ModelRegistered" | "RoyaltyPaid"): EventFragment;
+    getEvent(nameOrSignatureOrTopic: "LicensePurchased" | "ModelRegistered" | "ModelStatusChanged" | "RevenueWithdrawn" | "RoyaltyPaid"): EventFragment;
 
     encodeFunctionData(functionFragment: 'getModel', values: [BigNumberish]): string;
 encodeFunctionData(functionFragment: 'getModelCount', values?: undefined): string;
 encodeFunctionData(functionFragment: 'hasLicense', values: [BigNumberish, AddressLike]): string;
+encodeFunctionData(functionFragment: 'pendingWithdrawals', values: [AddressLike]): string;
+encodeFunctionData(functionFragment: 'platform', values?: undefined): string;
 encodeFunctionData(functionFragment: 'purchaseLicense', values: [BigNumberish]): string;
 encodeFunctionData(functionFragment: 'registerModel', values: [string, string, string, BigNumberish, BigNumberish]): string;
+encodeFunctionData(functionFragment: 'setModelActive', values: [BigNumberish, boolean]): string;
 encodeFunctionData(functionFragment: 'verifyModel', values: [BigNumberish, string]): string;
+encodeFunctionData(functionFragment: 'withdrawRevenue', values?: undefined): string;
 
     decodeFunctionResult(functionFragment: 'getModel', data: BytesLike): Result;
 decodeFunctionResult(functionFragment: 'getModelCount', data: BytesLike): Result;
 decodeFunctionResult(functionFragment: 'hasLicense', data: BytesLike): Result;
+decodeFunctionResult(functionFragment: 'pendingWithdrawals', data: BytesLike): Result;
+decodeFunctionResult(functionFragment: 'platform', data: BytesLike): Result;
 decodeFunctionResult(functionFragment: 'purchaseLicense', data: BytesLike): Result;
 decodeFunctionResult(functionFragment: 'registerModel', data: BytesLike): Result;
+decodeFunctionResult(functionFragment: 'setModelActive', data: BytesLike): Result;
 decodeFunctionResult(functionFragment: 'verifyModel', data: BytesLike): Result;
+decodeFunctionResult(functionFragment: 'withdrawRevenue', data: BytesLike): Result;
   }
 
   
@@ -49,6 +57,30 @@ decodeFunctionResult(functionFragment: 'verifyModel', data: BytesLike): Result;
       export type InputTuple = [modelId: BigNumberish, owner: AddressLike, name: string, cid: string, price: BigNumberish];
       export type OutputTuple = [modelId: bigint, owner: string, name: string, cid: string, price: bigint];
       export interface OutputObject {modelId: bigint, owner: string, name: string, cid: string, price: bigint };
+      export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>
+      export type Filter = TypedDeferredTopicFilter<Event>
+      export type Log = TypedEventLog<Event>
+      export type LogDescription = TypedLogDescription<Event>
+    }
+
+  
+
+    export namespace ModelStatusChangedEvent {
+      export type InputTuple = [modelId: BigNumberish, active: boolean];
+      export type OutputTuple = [modelId: bigint, active: boolean];
+      export interface OutputObject {modelId: bigint, active: boolean };
+      export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>
+      export type Filter = TypedDeferredTopicFilter<Event>
+      export type Log = TypedEventLog<Event>
+      export type LogDescription = TypedLogDescription<Event>
+    }
+
+  
+
+    export namespace RevenueWithdrawnEvent {
+      export type InputTuple = [recipient: AddressLike, amount: BigNumberish];
+      export type OutputTuple = [recipient: string, amount: bigint];
+      export interface OutputObject {recipient: string, amount: bigint };
       export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>
       export type Filter = TypedDeferredTopicFilter<Event>
       export type Log = TypedEventLog<Event>
@@ -127,6 +159,22 @@ decodeFunctionResult(functionFragment: 'verifyModel', data: BytesLike): Result;
     
 
     
+    pendingWithdrawals: TypedContractMethod<
+      [arg0: AddressLike, ],
+      [bigint],
+      'view'
+    >
+    
+
+    
+    platform: TypedContractMethod<
+      [],
+      [string],
+      'view'
+    >
+    
+
+    
     purchaseLicense: TypedContractMethod<
       [modelId: BigNumberish, ],
       [void],
@@ -143,10 +191,26 @@ decodeFunctionResult(functionFragment: 'verifyModel', data: BytesLike): Result;
     
 
     
+    setModelActive: TypedContractMethod<
+      [modelId: BigNumberish, active: boolean, ],
+      [void],
+      'nonpayable'
+    >
+    
+
+    
     verifyModel: TypedContractMethod<
       [modelId: BigNumberish, submittedHash: string, ],
       [boolean],
       'view'
+    >
+    
+
+    
+    withdrawRevenue: TypedContractMethod<
+      [],
+      [void],
+      'nonpayable'
     >
     
 
@@ -168,6 +232,16 @@ getFunction(nameOrSignature: 'hasLicense'): TypedContractMethod<
       [boolean],
       'view'
     >;
+getFunction(nameOrSignature: 'pendingWithdrawals'): TypedContractMethod<
+      [arg0: AddressLike, ],
+      [bigint],
+      'view'
+    >;
+getFunction(nameOrSignature: 'platform'): TypedContractMethod<
+      [],
+      [string],
+      'view'
+    >;
 getFunction(nameOrSignature: 'purchaseLicense'): TypedContractMethod<
       [modelId: BigNumberish, ],
       [void],
@@ -178,14 +252,26 @@ getFunction(nameOrSignature: 'registerModel'): TypedContractMethod<
       [bigint],
       'nonpayable'
     >;
+getFunction(nameOrSignature: 'setModelActive'): TypedContractMethod<
+      [modelId: BigNumberish, active: boolean, ],
+      [void],
+      'nonpayable'
+    >;
 getFunction(nameOrSignature: 'verifyModel'): TypedContractMethod<
       [modelId: BigNumberish, submittedHash: string, ],
       [boolean],
       'view'
     >;
+getFunction(nameOrSignature: 'withdrawRevenue'): TypedContractMethod<
+      [],
+      [void],
+      'nonpayable'
+    >;
 
     getEvent(key: 'LicensePurchased'): TypedContractEvent<LicensePurchasedEvent.InputTuple, LicensePurchasedEvent.OutputTuple, LicensePurchasedEvent.OutputObject>;
 getEvent(key: 'ModelRegistered'): TypedContractEvent<ModelRegisteredEvent.InputTuple, ModelRegisteredEvent.OutputTuple, ModelRegisteredEvent.OutputObject>;
+getEvent(key: 'ModelStatusChanged'): TypedContractEvent<ModelStatusChangedEvent.InputTuple, ModelStatusChangedEvent.OutputTuple, ModelStatusChangedEvent.OutputObject>;
+getEvent(key: 'RevenueWithdrawn'): TypedContractEvent<RevenueWithdrawnEvent.InputTuple, RevenueWithdrawnEvent.OutputTuple, RevenueWithdrawnEvent.OutputObject>;
 getEvent(key: 'RoyaltyPaid'): TypedContractEvent<RoyaltyPaidEvent.InputTuple, RoyaltyPaidEvent.OutputTuple, RoyaltyPaidEvent.OutputObject>;
 
     filters: {
@@ -196,6 +282,14 @@ getEvent(key: 'RoyaltyPaid'): TypedContractEvent<RoyaltyPaidEvent.InputTuple, Ro
 
       'ModelRegistered(uint256,address,string,string,uint256)': TypedContractEvent<ModelRegisteredEvent.InputTuple, ModelRegisteredEvent.OutputTuple, ModelRegisteredEvent.OutputObject>;
       ModelRegistered: TypedContractEvent<ModelRegisteredEvent.InputTuple, ModelRegisteredEvent.OutputTuple, ModelRegisteredEvent.OutputObject>;
+    
+
+      'ModelStatusChanged(uint256,bool)': TypedContractEvent<ModelStatusChangedEvent.InputTuple, ModelStatusChangedEvent.OutputTuple, ModelStatusChangedEvent.OutputObject>;
+      ModelStatusChanged: TypedContractEvent<ModelStatusChangedEvent.InputTuple, ModelStatusChangedEvent.OutputTuple, ModelStatusChangedEvent.OutputObject>;
+    
+
+      'RevenueWithdrawn(address,uint256)': TypedContractEvent<RevenueWithdrawnEvent.InputTuple, RevenueWithdrawnEvent.OutputTuple, RevenueWithdrawnEvent.OutputObject>;
+      RevenueWithdrawn: TypedContractEvent<RevenueWithdrawnEvent.InputTuple, RevenueWithdrawnEvent.OutputTuple, RevenueWithdrawnEvent.OutputObject>;
     
 
       'RoyaltyPaid(uint256,address,uint256)': TypedContractEvent<RoyaltyPaidEvent.InputTuple, RoyaltyPaidEvent.OutputTuple, RoyaltyPaidEvent.OutputObject>;
