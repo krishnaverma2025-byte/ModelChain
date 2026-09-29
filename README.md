@@ -68,6 +68,7 @@ npm run compile
 npm test
 npx tsc --noEmit
 npm test --prefix backend
+npm test --prefix frontend
 npm run lint --prefix frontend
 npm run build --prefix frontend
 npm run test:e2e --prefix frontend
@@ -87,7 +88,7 @@ Keys stay in protected backend records; no raw model or encryption key is sent t
 
 Authorized buyers can copy decrypted files. Integrity verification proves byte equality, not model safety or accuracy. The API/key service and its protected persistent volume are trusted components. Use TLS and a single API replica unless a shared session store is implemented. Gateway downloads are size-bounded. The catalogue enumerates on-chain models and is intended for a small project; larger scale needs indexing/pagination.
 
-Current/history secret scanning checks known credential values and common patterns; it is not a guarantee against every possible secret format. Root development tooling retains low-severity transitive elliptic findings without an available upstream fix. Backend/frontend audits and all findings should be rechecked at release. This implementation has not received an independent production contract audit.
+Current/history secret scanning checks known credential values and common patterns; it is not a guarantee against every possible secret format. On 2026-09-29, production dependency audits for root/backend/frontend reported zero findings. The full root development-tool audit reported 11 low findings (including transitive elliptic) and one moderate undici finding; the full frontend audit was clean. Recheck advisories before release and evaluate tooling fixes separately from runtime risk. This implementation has not received an independent production contract audit.
 
 ## Sepolia preparation — no deployment yet
 
@@ -99,7 +100,7 @@ Public testing still requires a funded dedicated deployer, Sepolia RPC, hosted H
 
 ## Repository and review workflow
 
-Development is on feature branches. Main is reserved for reviewed stable work. PR #2 contains the original settlement/storage foundation; PR #3 includes that foundation plus the completed application and later hardening, including the Pinata V3 fix. PR #2 is therefore superseded as a standalone release candidate. Review its foundation first within PR #3, then merge PR #3 only after team approval; close #2 as superseded afterward. Alternatively, retain both review units by merging #2 then #3 with ordinary merge commits, without deploying the intermediate state. Neither PR has been merged by this agent.
+Development is on feature branches. Main is reserved for reviewed stable work. PR #2 is closed; PR #3 and the UI/provenance redesign in PR #4 have been merged by the team. The pre-redesign recovery point remains `backup/pre-ui-redesign` at `5fe072c`. Local finalization fixes use `chore/local-demo-finalization` and require a separate reviewed PR; no automatic merge or public deployment is implied.
 
 Generated bindings/build outputs and unrelated local instruction-file changes must not be accidentally bundled with feature commits.
 
