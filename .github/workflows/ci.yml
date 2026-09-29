@@ -25,7 +25,7 @@ jobs:
       - run: npm run security:scan
       - run: npm run compile && npm test && npx tsc --noEmit
       - run: npm test --prefix backend
-      - run: npm run lint --prefix frontend && npm run build --prefix frontend
+      - run: npm test --prefix frontend && npm run lint --prefix frontend && npm run build --prefix frontend
       - run: npx playwright install --with-deps chromium
         working-directory: frontend
       - run: npm run test:e2e
