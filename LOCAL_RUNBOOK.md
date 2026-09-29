@@ -14,15 +14,23 @@ Run from `/Users/krishnaverma/Documents/BlockChain/BlockChain_Project`.
 
 Use Node 22.13 or later supported by the installed Hardhat/Vite packages. Run `npm ci` in the root, backend and frontend directories. Install Chromium with `cd frontend && npx playwright install chromium`.
 
-Run root `npm run compile` and `npm test`; backend `npm test`; frontend `npm run lint`, `npm run build` and `npm run test:e2e`. The E2E test starts its own local chain (18545), API (14000) and Vite (15173), deploys a disposable contract, and uses an injected wallet provider backed by local test accounts. It tests wallet RPC behavior; it does not automate the actual MetaMask extension. Screenshots and encrypted test records are retained in a printed temporary directory. No public network is used.
+Run root `npm run compile`, `npm test`, `npx tsc --noEmit` and `npm run security:scan -- --history`; backend `npm test`; frontend `npm test`, `npm run lint`, `npm run build` and `npm run test:e2e`. Run `npm audit --omit=dev` in each package; report full development-tool audits separately. The E2E test starts its own local chain (18545), API (14000) and Vite (15173), deploys a disposable contract, and uses an injected wallet provider backed by local test accounts. It tests wallet RPC behavior; it does not automate the actual MetaMask extension. Screenshots and encrypted test records are retained in a printed temporary directory. No public network is used.
 
 ## Run the local app
 
-1. In a root terminal run `npm run node`.
-2. In another root terminal run `npm run deploy:local`. Save the printed address. A fresh deployment is required for the new withdrawal contract; restarting the ephemeral chain removes registrations/licenses. Previous deployments are not migrated automatically.
+1. For a new session, in a root terminal run `npm run node -- --hostname 127.0.0.1`. Keep it running. Do not restart an existing valuable demo chain.
+2. In another root terminal run `RPC_URL=http://127.0.0.1:8545 npm run deploy:local`. Save the printed address. Restarting the ephemeral chain removes all contracts, registrations, licenses and revenue state; deployment and model registration must then be repeated. The same address can recur on a fresh chain without preserving any old state. Previous deployments are not migrated automatically.
 3. Configure your untracked backend `.env` from `backend/.env.example`: RPC_URL=http://127.0.0.1:8545, CHAIN_ID=31337, CONTRACT_ADDRESS=the new address, CLIENT_ORIGIN=http://localhost:5173. Generate a master key with `openssl rand -hex 32`; store it privately as MODEL_MASTER_KEY. Preserve the key across restarts and back it up separately from DATA_DIR. Run `npm start` in backend.
 4. Configure untracked frontend `.env` from `frontend/.env.example` with the same contract and chain, VITE_RPC_URL=http://127.0.0.1:8545, VITE_API_URL=http://127.0.0.1:4000. Run `npm run dev` in frontend and open http://localhost:5173. Supabase profiles are optional and separate from wallet authorization.
 5. Configure MetaMask for localhost chain 31337 and use only disposable local test accounts. Upload a supported model, register it, switch to a buyer, purchase and download. Creator revenue and deactivation are in Dashboard.
+
+### Real-wallet local acceptance
+
+In MetaMask select **Hardhat Local**, RPC `http://127.0.0.1:8545`, chain ID `31337`, currency symbol `ETH`, with no block explorer URL. Unlock the extension yourself; never paste passwords or account secrets into chat, source files or the frontend. Use already imported disposable Hardhat accounts; these accounts must never hold real assets or be used on a public network.
+
+Register a small safe fixture as creator from Upload. Record its original SHA-256, storage reference, model ID, mined transaction and block. Switch to a distinct buyer; check `hasLicense` is false, purchase at the displayed on-chain price, wait for receipt success and verify a fresh `hasLicense` is true. Download, sign the one-use challenge, and compare the downloaded SHA-256 with the chain hash. Switch to an unlicensed wallet and confirm denial, then back to the buyer; stale access/verification evidence must not remain after a switch. Activity and Trace Model must show actual logs and references, not simulated history. Dashboard distinguishes creator models, purchased licenses and withdrawable revenue.
+
+Preserve existing MODEL_MASTER_KEY and DATA_DIR when restarting the API. Generate a key only for an initial installation, never to fix a wallet/network issue. A fresh chain does not delete old encrypted storage records; preserve them rather than attempting automatic cleanup. If MetaMask retains obsolete pending transactions/nonces after a chain restart, inspect them before retrying and request user-assisted wallet cleanup if required; do not reset a valuable live chain to resolve wallet state.
 
 ## Behavior and limits
 
@@ -52,6 +60,8 @@ For the actual MetaMask extension check, run the local app with matched frontend
 
 ## Multi-wallet diagnosis and acceptance
 
+The following is a historical diagnosis of an earlier ephemeral chain, not the state of a newly started demo. Re-query the current chain before treating any account/license or transaction claim below as current.
+
 The reported Account 3 download denial was checked against the user's existing node without restarting, redeploying or sending contract transactions. At block 3, Account 2 had a license for model 1, while Accounts 3/4 did not. The only mined purchase was from Account 2. The running API authenticated all three wallets correctly: Account 2 downloaded with matching SHA-256; Accounts 3/4 received 403. A successful wallet prompt alone is not a mined purchase. Preserve the transaction hash from MetaMask if a displayed success differs from the chain; check its receipt/from/to and hasLicense on that exact network before attempting another purchase.
 
 Details now waits for a receipt matching the buyer and contract, checks hasLicense at the receipt block through the wallet provider and freshly through the configured RPC, then displays License Owned. Account/chain events clear old state; asynchronous work from another wallet cannot complete into current UI. Downloads obtain a new signer/session, validate backend deployment identity and challenge wallet, verify signature recovery, and recheck the selected wallet before saving. Backend denial diagnostics contain only wallet/model/chain/contract, never tokens or secrets.
@@ -62,4 +72,4 @@ The running API uses node without hot reload. After pulling fixes, restart **onl
 
 Repeated unrecognized-selector/StackUnderflow messages cannot be attributed from the function label alone. Record the eth_call target, calldata selector and timestamp; compare with application requests. The isolated MontAI flow is checked for those errors. The user's historical terminal stream was not accessible to the agent, so wallet probing versus another caller is not asserted without that evidence.
 
-Development tooling audits now report only low-severity transitive elliptic findings through Hardhat verification/ethers v5; npm reports no upstream fix. Runtime backend/frontend production-dependency audits remain separate. Compiler is pinned to solc 0.8.28, with patched temporary-file and Mocha dependencies explicitly overridden and verified by tests. Generated contract bindings remain reproducible build outputs and are preserved locally; instruction-file deletions are outside this feature's commits.
+On 2026-09-29 the full root development-tool audit reported 11 low findings and one moderate undici finding; the full frontend audit and production-only audits of all three packages were clean. Recheck at release rather than relying on historical audit results. Compiler is pinned to solc 0.8.28, with patched temporary-file and Mocha dependencies explicitly overridden and verified by tests. Generated contract bindings and pre-existing instruction-file deletions were preserved in the pre-redesign snapshot; do not discard unrelated working changes during local acceptance.
