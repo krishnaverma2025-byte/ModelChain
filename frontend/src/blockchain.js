@@ -1,3 +1,4 @@
+import { EVENT_ABI } from './activity';
 import { BrowserProvider, Contract, JsonRpcProvider, isAddress, verifyMessage } from 'ethers';
 const production=import.meta.env.PROD;
 export const config={rpc:import.meta.env.VITE_RPC_URL||(production?'':'http://127.0.0.1:8545'),chainId:BigInt(import.meta.env.VITE_CHAIN_ID||(production?0:31337)),address:import.meta.env.VITE_CONTRACT_ADDRESS||'',api:import.meta.env.VITE_API_URL||(production?'':'http://127.0.0.1:4000')};
@@ -10,7 +11,7 @@ export const ABI=[
  'function pendingWithdrawals(address) view returns(uint256)',
  'function withdrawRevenue()',
  'function setModelActive(uint256,bool)',
- 'event ModelRegistered(uint256 indexed modelId,address indexed owner,string name,string cid,uint256 price)'
+ ...EVENT_ABI
 ];
 export async function readContract(){
  if(!config.rpc || config.chainId<=0n) throw new Error('Configure VITE_RPC_URL and VITE_CHAIN_ID for this deployment.');

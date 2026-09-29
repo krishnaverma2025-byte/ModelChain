@@ -1,5 +1,13 @@
 # MontAI local runbook and deployment readiness
 
+## UI traceability review
+
+The registry redesign adds `/activity`, model event timelines and a keyboard-accessible Trace Model drawer. Events are read from the configured contract in 2,000-block pages; use **Load older blocks** for earlier history. Missing/RPC-unavailable values are never replaced with synthetic history. RoyaltyPaid means revenue accrual, and withdrawals are account-level. ModelStatusChanged does not emit the actor wallet. Registration proves an on-chain wallet claim, not independently validated authorship.
+
+Authentication, authorized delivery and integrity evidence is limited to the current Details session and clears on wallet, network or model changes. “Model delivered” means verified bytes reached the browser and its download was requested; it is not a claim that the user saved or executed the file. Full technical values can be expanded or copied. Localhost never links to Etherscan. An optional `VITE_EXPLORER_URL` enables HTTPS transaction links for a configured public network; it is ignored on chain 31337.
+
+Frontend `npm test` covers ABI event decoding, bounded history and explorer-link guards. The expanded E2E checks all primary routes at 1440, 768 and 390 px, keyboard dismissal/focus restoration, session evidence and the existing access/security flows. `MONTAI_REVIEW=1 npm run test:e2e` keeps the **isolated** review services on 18545/14000/15173 after passing; stop that command after reviewing. Its disposable model is not the user's live demo, and its final state includes deactivation/withdrawal tests. It does not touch 8545 or use Pinata credentials.
+
 Run from `/Users/krishnaverma/Documents/BlockChain/BlockChain_Project`.
 
 ## Install and test

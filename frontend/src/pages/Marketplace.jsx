@@ -1,204 +1,149 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { ethers } from "ethers";
-import { readContract, metadata, short } from "../blockchain";
-import "./Marketplace.css";
-
-
-
-function Marketplace() {
-  const [models, setModels] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  const fetchModels = async () => {
-    try {
-
-      // Read the explicitly configured chain, not a cached catalogue.
-      const contract = await readContract();
-
-      const count = await contract.getModelCount();
-
-      const blockchainModels = [];
-
-      for (let i = 1; i <= Number(count); i++) {
-        try {
-          const data = await contract.getModel(i);
-
-          if (!data || !data.active) {
-            continue;
-          }
-
-          const extra = await metadata(i);
-          blockchainModels.push({
-            id: data.id.toString(),
-            name: data.name,
-            description: extra.description,
-            price_eth: ethers.formatEther(data.price),
-            category: extra.category,
-            owner: data.owner,
-            cid: data.cid,
-            modelHash: data.modelHash,
-            royalty: data.royalty.toString(),
-          });
-        } catch (modelError) {
-          console.log(
-            `Skipping model ${i}:`,
-            modelError
-          );
-        }
-      }
-
-      setModels(blockchainModels);
-      setError("");
-    } catch (err) {
-      console.error(
-        "Error fetching blockchain models:",
-        err
-      );
-
-      setModels([]);
-
-      setError(
-        err?.shortMessage ||
-          err?.message ||
-          "Could not connect to the Hardhat blockchain."
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
+import { formatEther } from "ethers";
+import { readContract, metadata, errorText } from "../blockchain";
+import { Badge, CopyValue, Icon } from "../components/UI";
+export default function Marketplace() {
+  const [models, setModels] = useState([]),
+    [loading, setLoading] = useState(true),
+    [error, setError] = useState(""),
+    [query, setQuery] = useState(""),
+    [category, setCategory] = useState("All categories"),
+    [status, setStatus] = useState("Active"),
+    [revision, setRevision] = useState(0);
   useEffect(() => {
-    let cancelled = false;
-    Promise.resolve().then(() => { if (!cancelled) fetchModels(); });
-
-    const handleFocus = () => {
-      fetchModels();
-    };
-
-    window.addEventListener("focus", handleFocus);
-
+    let active = true;
+    async function load() {
+      try {
+        const c = await readContract();
+        const count = await c.getModelCount();
+        const items = [];
+        for (let id = 1n; id <= count; id++) {
+          const m = await c.getModel(id);
+          items.push({
+            id: String(m.id),
+            name: m.name,
+            owner: m.owner,
+            active: m.active,
+            price: formatEther(m.price),
+            ...(await metadata(id)),
+          });
+        }
+        if (active) {
+          setModels(items);
+          setError("");
+        }
+      } catch (e) {
+        if (active) setError(errorText(e));
+      } finally {
+        if (active) setLoading(false);
+      }
+    }
+    load();
     return () => {
-      cancelled = true;
-      window.removeEventListener(
-        "focus",
-        handleFocus
-      );
+      active = false;
     };
-  }, []);
-
-  if (loading) {
-    return (
-      <div className="marketplace-page">
-        <main className="marketplace-content">
-          <div className="section-label">
-            BLOCKCHAIN MARKETPLACE
-          </div>
-
-          <h1>Discover AI Models</h1>
-
-          <p className="section-description">
-            Loading models from the blockchain...
-          </p>
-        </main>
-      </div>
-    );
-  }
-
+  }, [revision]);
+  const visible = models.filter(
+    (m) =>
+      (status === "All statuses" || m.active === (status === "Active")) &&
+      (category === "All categories" || m.category === category) &&
+      [m.name, m.description, m.owner, m.id].some((v) =>
+        v?.toLowerCase().includes(query.toLowerCase()),
+      ),
+  );
   return (
-    <div className="marketplace-page">
-      <main className="marketplace-content">
-
-        <div className="section-label">
-          BLOCKCHAIN MARKETPLACE
+    <main className="page marketplace-page">
+      <header className="page-heading">
+        <div>
+          <p className="eyebrow">MODEL REGISTRY</p>
+          <h1>Discover AI Models</h1>
+          <p>
+            Explore registered models. Inspect their provenance before you
+            license.
+          </p>
         </div>
-
-        <h1>Discover AI Models</h1>
-
-        <p className="section-description">
-          Discover → License → Verify. Explore models registered on ModelChain.
-        </p>
-
-        {error && (
-          <div
-            style={{
-              marginBottom: "30px",
-              padding: "15px",
-              borderRadius: "10px",
-              color: "#ff6b6b",
-              background: "rgba(255, 107, 107, 0.08)",
-            }}
+        <Link className="primary-button" to="/upload-model">
+          Register Model <Icon name="arrow" />
+        </Link>
+      </header>
+      <div className="registry-toolbar">
+        <label className="search">
+          Search models
+          <input
+            type="search"
+            placeholder="Name, description, creator or model ID"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+        </label>
+        <label>
+          Category
+          <select
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
           >
-            {error}
-          </div>
-        )}
-
-        {models.length === 0 && !error && (
-          <div className="not-found">
-            <h2>No models available</h2>
-
-            <p>
-              Register an AI model on the blockchain
-              to see it here.
-            </p>
-          </div>
-        )}
-
-        <div className="models-grid">
-
-          {models.map((model) => (
-            <div
-              className="model-card"
-              key={model.id}
-            >
-
-              <div className="model-icon">
-                AI
-              </div>
-
-              <h2>
-                {model.name}
-              </h2>
-
-              <p>
-                {model.description}
-              </p>
-              <small title={model.owner}>Creator {short(model.owner)}</small>
-
-              <div className="model-info">
-
-                <strong>
-                  {model.price_eth} ETH
-                </strong>
-
-                <span>
-                  {model.category}
-                </span>
-
-              </div>
-
-              <Link
-                to={`/model/${model.id}`}
-                className="model-button"
-              >
-                <span>
-                  View Model Details
-                </span>
-
-                <span className="button-arrow">
-                  →
-                </span>
-              </Link>
-
-            </div>
-          ))}
-
+            {["All categories", ...new Set(models.map((m) => m.category))].map(
+              (c) => (
+                <option key={c}>{c}</option>
+              ),
+            )}
+          </select>
+        </label>
+        <label>
+          Status
+          <select value={status} onChange={(e) => setStatus(e.target.value)}>
+            {["Active", "Inactive", "All statuses"].map((s) => (
+              <option key={s}>{s}</option>
+            ))}
+          </select>
+          <button onClick={() => setRevision((n) => n + 1)}>Refresh</button>
+        </label>
+      </div>
+      {loading && <p role="status">Loading models from the blockchain…</p>}
+      {error && (
+        <p role="alert" className="error">
+          {error}
+        </p>
+      )}
+      {!loading && !error && (
+        <p className="caption">
+          {visible.length} matching models · Blockchain-backed registry
+        </p>
+      )}
+      {!loading && !error && !visible.length && (
+        <div className="empty-state">
+          <h2>No models available</h2>
+          <p>Register a model or adjust your filters.</p>
         </div>
-
-      </main>
-    </div>
+      )}
+      <div className="models-grid">
+        {visible.map((m) => (
+          <article className="model-card" key={m.id}>
+            <div className="section-head">
+              <span className="model-category">{m.category}</span>
+              <Badge tone={m.active ? "success" : "neutral"}>
+                {m.active ? "ACTIVE" : "INACTIVE"}
+              </Badge>
+            </div>
+            <p className="caption">
+              MODEL <code>#{m.id}</code>
+            </p>
+            <h2>{m.name}</h2>
+            <p className="model-description">{m.description}</p>
+            <div className="card-creator">
+              <span>Creator</span>
+              <CopyValue value={m.owner} label="creator" />
+            </div>
+            <div className="model-footer">
+              <strong>
+                {m.price} <span>ETH</span>
+              </strong>
+              <Link to={`/model/${m.id}`}>View Model Details →</Link>
+            </div>
+          </article>
+        ))}
+      </div>
+    </main>
   );
 }
-
-export default Marketplace;
