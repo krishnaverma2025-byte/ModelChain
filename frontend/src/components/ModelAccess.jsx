@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import {
   wallet,
   assertCurrentWallet,
-  authenticate,
   api,
   hashFile,
   readContract,
@@ -27,9 +26,8 @@ export default function ModelAccess({ id, onEvidence }) {
   async function download() {
     setBusy(true);
     try {
-      const { signer, address } = await wallet();
-      setStatus("Sign in to request licensed access…");
-      const headers = await authenticate(signer);
+      const { address, headers } = await wallet();
+      setStatus("Authorizing download…");
       await assertCurrentWallet(address);
       if (!active.current) return;
       onEvidence?.({

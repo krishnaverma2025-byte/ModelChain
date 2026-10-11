@@ -21,13 +21,19 @@ Supported extensions are ZIP, ONNX, PT, PKL, BIN and SAFETENSORS. Files are neve
 
 ## Buyer flow
 
-Discover active blockchain models → open Details → connect MetaMask → purchase with the current signer and exact on-chain price → await the transaction receipt → verify the receipt buyer/contract and fresh hasLicense results on the wallet and configured RPC → show License Owned.
+Discover active blockchain models → open Details → sign in with MetaMask using a free challenge signature → purchase with the authenticated current signer and exact on-chain price → await the transaction receipt → verify the receipt buyer/contract and fresh hasLicense results on the wallet and configured RPC → show License Owned.
 
-Protected download independently obtains the current signer, validates the backend chain/contract, signs a one-use challenge and verifies signature ownership. The server recovers that wallet and checks its on-chain license (or creator ownership) before retrieving/decrypting the model. The browser hashes the delivered original bytes and blocks saving a mismatch. Account/network changes invalidate pending UI work; another wallet's successful transaction cannot populate the current wallet's license state.
+Wallet connection, wallet authentication, optional profile identity and on-chain roles are separate. Uploads, purchases, downloads, listing status changes and withdrawals require an unexpired wallet session matching the selected account/network. The client checks the backend session before protected actions; write guards recheck immediately before opening MetaMask. Connecting MetaMask or signing into Google/email alone does not grant access.
+
+The backend recovers the signed wallet and independently checks its on-chain license (or creator ownership) before retrieving/decrypting the model. The browser hashes the delivered original bytes and blocks saving a mismatch. Account/network changes, disconnect, session expiry and application logout immediately clear role, access, pending-result and current-session evidence views. Tokens are memory-only: a browser reload requires a fresh free sign-in; switching accounts never carries the previous session forward. Logout also signs out the optional local Supabase profile and attempts server-side wallet-session revocation; offline revocation may fail, but the frontend still clears access immediately and the backend token expires after one hour.
+
+Optional profiles can link the authenticated public address using existing Supabase user metadata (`linked_wallet_address`). This is profile context, never proof of ownership or license rights. A linked-profile/account mismatch blocks protected actions and offers normal MetaMask account selection. The app never selects an account silently or asks for wallet credentials. Real Google/email flows and existing Supabase policies still require acceptance with the configured service.
 
 ## Payments and listing behavior
 
 The royalty field is the **creator share of each sale**, in whole percent. The remainder is credited to the platform, which is the deploying wallet. All received license proceeds are assigned to withdrawal balances. Withdrawals zero the balance before the external transfer and revert atomically if delivery fails.
+
+For 0.05 ETH at 90%, creator credit is 0.045 ETH and platform credit is 0.005 ETH; an ordinary buyer receives zero. A buyer that is also the platform wallet legitimately receives platform fees. Dashboard queries `pendingWithdrawals(authenticatedWallet)` directly, so combined creator/platform credit is not mislabelled as buyer earnings. An isolated contract test verifies these amounts and the platform-as-buyer case without redeploying the live chain.
 
 Creators cannot purchase their own models; duplicate purchases, wrong payment, inactive sales and invalid model IDs are rejected. Creators retain download access. Deactivation prevents new sales but does not revoke existing licenses. Dashboard shows creator models, purchased licenses, and aggregate withdrawable revenue. Registrations are immutable; versions, resale royalties and legal usage rights are not separately modeled. RoyaltyPaid is a legacy event emitted when revenue is credited; RevenueWithdrawn records the actual payout.
 

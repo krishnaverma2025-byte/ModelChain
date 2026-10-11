@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { config, short } from "../blockchain";
 
 export function Badge({ children, tone = "neutral" }) {
@@ -26,8 +26,10 @@ export function Icon({ name = "cube" }) {
     </svg>
   );
 }
-export function CopyValue({ value, label = "value" }) {
+export function CopyValue({ value, label = "value", compact = false }) {
   const [status, setStatus] = useState("");
+  const timer = useRef(null);
+  useEffect(() => () => clearTimeout(timer.current), []);
   if (!value) return <span className="muted">Not available</span>;
   return (
     <span className="technical-value">
@@ -39,7 +41,9 @@ export function CopyValue({ value, label = "value" }) {
         onClick={async () => {
           try {
             await navigator.clipboard.writeText(value);
-            setStatus("Copied");
+            setStatus("Copied ✓");
+            clearTimeout(timer.current);
+            timer.current = setTimeout(() => setStatus(""), 1800);
           } catch {
             setStatus("Copy unavailable");
           }
@@ -48,10 +52,12 @@ export function CopyValue({ value, label = "value" }) {
         <code>{short(value)}</code>
         <small>{status || "Copy"}</small>
       </button>
-      <details>
-        <summary aria-label={`Show full ${label}`}>Full value</summary>
-        <code>{value}</code>
-      </details>
+      {!compact && (
+        <details>
+          <summary aria-label={`Show full ${label}`}>Full value</summary>
+          <code>{value}</code>
+        </details>
+      )}
     </span>
   );
 }

@@ -22,6 +22,12 @@ test('authenticated wallets stay isolated and challenge/session expiry is enforc
   const denied=await download(token4);assert.equal(denied.status,403);assert.equal((await denied.json()).wallet,buyer4.address.toLowerCase());
   assert.equal((await download(token3)).status,200);assert.equal((await download(token2)).status,200);
   assert.deepEqual(queried,[buyer2,buyer3,buyer3,buyer4,buyer3,buyer2].map(w=>w.address.toLowerCase()));
+  const checked=await fetch(url+'/api/auth/session',{headers:{Authorization:`Bearer ${token2}`}});
+  assert.equal(checked.status,200);assert.equal((await checked.json()).address,buyer2.address.toLowerCase());
+  assert.equal((await fetch(url+'/api/auth/session',{method:'DELETE',headers:{Authorization:`Bearer ${token2}`}})).status,204);
+  assert.equal((await download(token2)).status,401);
+  assert.equal((await fetch(url+'/api/auth/session',{headers:{Authorization:`Bearer ${token2}`}})).status,401);
+  assert.equal((await download(token3)).status,200);
   const c=await challenge(buyer3);
   assert.equal((await post('/api/auth/session',{address:buyer4.address,nonce:c.nonce,signature:await buyer3.signMessage(c.message)})).status,401);
   const expired=await challenge(buyer3);now+=300001;

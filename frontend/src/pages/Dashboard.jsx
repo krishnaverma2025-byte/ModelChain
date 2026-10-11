@@ -10,8 +10,11 @@ import {
   errorText,
 } from "../blockchain";
 import { NetworkBadge } from "../components/UI";
+import useIdentity from "../useIdentity";
+import WalletGate from "../components/WalletGate";
 
 export default function Dashboard() {
+  const identity = useIdentity();
   const revision = useRef(0);
   const [address, setAddress] = useState(""),
     [models, setModels] = useState([]),
@@ -75,25 +78,15 @@ export default function Dashboard() {
       );
       if (a) load(a);
     };
-    window.ethereum
-      ?.request({ method: "eth_accounts" })
-      .then(changed)
-      .catch(() => {});
-    const networkChanged = () => changed([]);
-    window.ethereum?.on("accountsChanged", changed);
-    window.ethereum?.on("chainChanged", networkChanged);
+    changed(identity.authenticated ? [identity.authenticated] : []);
     return () => {
       disposed = true;
       requests.current++;
-      window.ethereum?.removeListener("accountsChanged", changed);
-      window.ethereum?.removeListener("chainChanged", networkChanged);
     };
-  }, []);
+  }, [identity.authenticated]);
   async function connect() {
     try {
-      const w = await wallet();
-      setAddress(w.address);
-      await load(w.address);
+      if (identity.authenticated) await load(identity.authenticated);
     } catch (e) {
       setStatus(errorText(e));
     }
@@ -102,13 +95,26 @@ export default function Dashboard() {
     setBusy(true);
     try {
       const w = await wallet();
+      if (
+        kind === "withdraw" &&
+        (await w.contract.pendingWithdrawals(w.address)) === 0n
+      )
+        throw new Error("No revenue is available for this wallet.");
+      if (
+        kind !== "withdraw" &&
+        (await w.contract.getModel(m.id)).owner.toLowerCase() !==
+          w.address.toLowerCase()
+      )
+        throw new Error("Only the model creator can change its status.");
+      await assertCurrentWallet(w.address);
       setStatus("Confirm in MetaMask…");
       const tx =
         kind === "withdraw"
           ? await w.contract.withdrawRevenue()
           : await w.contract.setModelActive(m.id, !m.active);
       setStatus("Transaction submitted. Waiting for confirmation…");
-      await tx.wait();
+      const receipt = await tx.wait();
+      if (receipt?.status !== 1) throw new Error("Transaction failed.");
       await assertCurrentWallet(w.address);
       await load(w.address);
     } catch (e) {
@@ -148,21 +154,43 @@ export default function Dashboard() {
         ))}
       </div>
     ) : (
-      <p className="empty-state">
+      <div className="empty-state">
         {busy
           ? "Reading blockchain…"
           : creator
-            ? "You have not registered any models yet."
-            : "Your purchased licenses will appear here."}
-      </p>
+            ? "No models registered. Models registered by this wallet will appear here."
+            : "No licenses yet. Models licensed by this wallet will appear here."}
+        <p>
+          <Link to={creator ? "/upload-model" : "/marketplace"}>
+            {creator ? "Register model" : "Explore models"} →
+          </Link>
+        </p>
+      </div>
     );
   }
+  if (!identity.authenticated)
+    return (
+      <main className="page">
+        <p className="eyebrow">YOUR WORKSPACE</p>
+        <h1>Your workspace</h1>
+        <p>
+          Sign in with MetaMask to view models, licenses and revenue associated
+          with your wallet.
+        </p>
+        <WalletGate action="view your workspace" />
+      </main>
+    );
   return (
     <div className="dashboard-page">
       <main className="dashboard-content">
         <div className="section-label">YOUR WORKSPACE</div>
         <h1>Overview</h1>
         <p>Ownership and licenses are read directly from ModelChain.</p>
+        <p className="caption">
+          Withdrawable revenue is pendingWithdrawals for this authenticated
+          wallet. Creator shares and platform fees can belong to the same
+          wallet; buying alone earns no revenue.
+        </p>
         <button onClick={connect} disabled={busy}>
           {address ? short(address) : "Connect wallet"}
         </button>

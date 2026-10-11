@@ -13,7 +13,7 @@ export function createApp({chain,storage,origin,chainId,contractAddress,now=Date
   app.use(cors({origin,exposedHeaders:['Content-Disposition']}));
   app.use(express.json({limit:'16kb'}));
   app.use('/api',rateLimit({windowMs:60000,limit:60}));
-  const clean = () => { for(const map of [challenges,sessions]) for(const [k,v] of map) if(v.expires<now()) map.delete(k); };
+  const clean = () => { for(const map of [challenges,sessions]) for(const [k,v] of map) if(v.expires<=now()) map.delete(k); };
   const auth = (req,res,next) => {
     clean(); const session = sessions.get(req.headers.authorization?.replace(/^Bearer /,''));
     if(!session) return res.status(401).json({error:'Connect and authenticate your wallet'});
@@ -38,9 +38,15 @@ export function createApp({chain,storage,origin,chainId,contractAddress,now=Date
     clean(); const challenge=challenges.get(req.body?.nonce); challenges.delete(req.body?.nonce);
     try {
       if(!challenge || (req.body?.address!==undefined && (!isAddress(req.body.address) || req.body.address.toLowerCase()!==challenge.address)) || verifyMessage(challenge.message,req.body?.signature).toLowerCase()!==challenge.address) throw new Error();
-      const token=randomBytes(32).toString('hex'); sessions.set(token,{address:challenge.address,expires:now()+3600000});
-      res.json({token,address:challenge.address});
+      const token=randomBytes(32).toString('hex'), expiresAt=now()+3600000; sessions.set(token,{address:challenge.address,expires:expiresAt});
+      res.set('Cache-Control','no-store'); res.json({token,address:challenge.address,expiresAt});
     } catch { res.status(401).json({error:'Invalid or expired signature'}); }
+  });
+  app.get('/api/auth/session',auth,(req,res)=>{
+    res.set('Cache-Control','no-store'); res.json({address:req.wallet});
+  });
+  app.delete('/api/auth/session',auth,(req,res)=>{
+    sessions.delete(req.headers.authorization.replace(/^Bearer /,'')); res.status(204).end();
   });
   app.post('/api/uploads',auth,upload.single('model'),async(req,res)=>{
     const {name,description='',category='AI Model'}=req.body;
