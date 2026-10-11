@@ -37,8 +37,7 @@ export default function Home() {
         <div>
           <p className="eyebrow">THE MARKETPLACE FOR INDEPENDENT AI CREATORS</p>
           <h1>
-            Discover and license
-            <br />
+            Discover and license <br />
             <span>verified AI models.</span>
           </h1>
           <p className="lead">

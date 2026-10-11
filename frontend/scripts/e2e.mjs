@@ -574,6 +574,11 @@ try {
               getComputedStyle(element).gridTemplateColumns.split(" ").length,
           );
         assert.equal(columns, width > 1024 ? 3 : width > 600 ? 2 : 1);
+        if (!route)
+          assert.match(
+            await page.locator("h1").innerText(),
+            /license\s+verified/,
+          );
       }
       assert.ok(
         await page.evaluate(
