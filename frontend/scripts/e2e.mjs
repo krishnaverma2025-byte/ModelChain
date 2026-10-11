@@ -122,6 +122,9 @@ try {
   });
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message));
+  page.on("console", (message) => {
+    if (/same key/.test(message.text())) errors.push(message.text());
+  });
   let account = await creator.getAddress(),
     wrongNetwork = false,
     reject = false,
@@ -130,7 +133,14 @@ try {
     connectEvent = false;
   const purchases = [];
   let authRequests = 0;
+  let transactionRequests = 0;
+  let uploadRequests = 0;
+  page.on("request", (request) => {
+    if (request.url() === api + "/api/uploads" && request.method() === "POST")
+      uploadRequests++;
+  });
   await page.exposeFunction("walletRpc", async ({ method, params = [] }) => {
+    if (method === "eth_sendTransaction") transactionRequests++;
     if (
       (reject &&
         [
@@ -171,6 +181,30 @@ try {
       purchases.push(params[0].from.toLowerCase());
     return provider.send(method, params);
   });
+  async function signIn() {
+    await page
+      .getByRole("button", { name: "Sign in with MetaMask", exact: true })
+      .click();
+    try {
+      await page
+        .locator(".wallet-status")
+        .getByRole("button", { name: /●/ })
+        .waitFor();
+    } catch (error) {
+      console.error(
+        "Wallet sign-in UI:",
+        await page.locator(".auth-prerequisite").innerText(),
+      );
+      throw error;
+    }
+  }
+  async function respectApiBudget(minimum = 30) {
+    const response = await fetch(api + "/api/models/1/metadata");
+    if (Number(response.headers.get("x-ratelimit-remaining")) < minimum) {
+      const reset = Number(response.headers.get("x-ratelimit-reset")) * 1000;
+      await page.waitForTimeout(Math.max(0, reset - Date.now()) + 1000);
+    }
+  }
   await page.addInitScript(() => {
     const listeners = {};
     window.ethereum = {
@@ -194,6 +228,37 @@ try {
   await page.goto(origin + "/activity");
   await page.getByText("No events in this block range.").waitFor();
   await page.goto(origin + "/upload");
+  assert.equal(
+    await page
+      .getByRole("button", { name: "Register Model", exact: true })
+      .isDisabled(),
+    true,
+  );
+  assert.equal(
+    transactionRequests,
+    0,
+    "Signed-out upload requested a transaction",
+  );
+  const blocked = await page.evaluate(async () => {
+    const { wallet, purchaseModelLicense } = await import("/src/blockchain.js");
+    const errors = [];
+    for (const action of [wallet, () => purchaseModelLicense(1)]) {
+      try {
+        await action();
+        errors.push("unexpected access");
+      } catch (e) {
+        errors.push(e.message);
+      }
+    }
+    return errors;
+  });
+  assert.ok(blocked.every((message) => /Sign in/.test(message)));
+  assert.equal(
+    transactionRequests,
+    0,
+    "Signed-out action guard reached MetaMask",
+  );
+  await signIn();
   await page.getByPlaceholder("Enter model name").fill("Verified vision model");
   await page
     .getByPlaceholder("Describe your AI model")
@@ -201,13 +266,21 @@ try {
   const bytes = Buffer.from(
     "MontAI original model bytes for integrity verification",
   );
+  await page.locator("input[type=file]").setInputFiles({
+    name: "vision.onnx",
+    mimeType: "application/octet-stream",
+    buffer: bytes,
+  });
+  rejectMethod = "eth_sendTransaction";
   await page
-    .locator("input[type=file]")
-    .setInputFiles({
-      name: "vision.onnx",
-      mimeType: "application/octet-stream",
-      buffer: bytes,
-    });
+    .getByRole("button", { name: "Register Model", exact: true })
+    .click();
+  await page
+    .getByText(/Request rejected in MetaMask/)
+    .first()
+    .waitFor();
+  assert.equal(uploadRequests, 1);
+  rejectMethod = "";
   await page
     .getByRole("button", { name: "Register Model", exact: true })
     .click();
@@ -222,6 +295,51 @@ try {
     true,
   );
   assert.equal(await contract.getModelCount(), 1n);
+  assert.equal(
+    uploadRequests,
+    1,
+    "Registration retry duplicated encrypted upload",
+  );
+  // Logout clears role/access/session evidence but preserves public creator facts.
+  await page
+    .locator(".wallet-status")
+    .getByRole("button", { name: /●/ })
+    .click();
+  await page
+    .getByRole("button", { name: "Disconnect wallet", exact: true })
+    .click();
+  await page
+    .getByText("Sign in to check license status.", { exact: true })
+    .waitFor();
+  assert.equal(
+    await page
+      .getByRole("button", { name: "License Model", exact: true })
+      .count(),
+    0,
+  );
+  assert.equal(
+    await page
+      .getByRole("button", { name: "Download licensed model", exact: true })
+      .count(),
+    0,
+  );
+  assert.equal(await page.getByText("CREATOR", { exact: true }).count(), 0);
+  assert.ok(
+    await page
+      .getByRole("button", {
+        name: "Copy creator: " + (await creator.getAddress()),
+        exact: true,
+      })
+      .count(),
+  );
+  const signedOutTx = transactionRequests;
+  await page.getByRole("button", { name: "Trace Model", exact: true }).click();
+  await page
+    .getByRole("dialog")
+    .getByText("Not authenticated", { exact: true })
+    .waitFor();
+  await page.keyboard.press("Escape");
+  assert.equal(transactionRequests, signedOutTx);
   const inspectionNonce = await provider.send("eth_getTransactionCount", [
     await creator.getAddress(),
     "latest",
@@ -253,6 +371,7 @@ try {
     (value) => window.emitWalletEvent("accountsChanged", [value]),
     account,
   );
+  await signIn();
   await page
     .getByRole("button", { name: "License Model", exact: true })
     .waitFor();
@@ -270,6 +389,10 @@ try {
     .waitFor({ timeout: 30000 });
   assert.equal(await contract.hasLicense(1, account), true);
   await page.reload();
+  await page
+    .getByText("Sign in to check license status.", { exact: true })
+    .waitFor();
+  await signIn();
   await page.getByRole("button", { name: /License Owned/ }).waitFor();
   const downloadPromise = page.waitForEvent("download");
   await page.getByRole("button", { name: "Download licensed model" }).click();
@@ -281,6 +404,7 @@ try {
     (value) => window.emitWalletEvent("accountsChanged", [value]),
     account,
   );
+  await signIn();
   await page
     .getByRole("button", { name: "License Model", exact: true })
     .waitFor();
@@ -311,25 +435,44 @@ try {
     (await buyer.getAddress()).toLowerCase(),
     (await buyer3.getAddress()).toLowerCase(),
   ]);
-  rejectMethod = "personal_sign";
-  await page.getByRole("button", { name: "Download licensed model" }).click();
-  await page
-    .getByRole("status")
-    .filter({ hasText: /rejected/ })
-    .waitFor();
-  rejectMethod = "";
   const thirdDownload = page.waitForEvent("download");
   await page.getByRole("button", { name: "Download licensed model" }).click();
   assert.deepEqual(await readFile(await (await thirdDownload).path()), bytes);
-  switchDuringSign = true;
-  await page.getByRole("button", { name: "Download licensed model" }).click();
+  // Authentication signatures, not downloads, are the login boundary.
   await page
-    .getByRole("button", { name: "License Model", exact: true })
+    .locator(".wallet-status")
+    .getByRole("button", { name: /●/ })
+    .click();
+  await page
+    .getByRole("button", { name: "Disconnect wallet", exact: true })
+    .click();
+  rejectMethod = "personal_sign";
+  await page
+    .getByRole("button", { name: "Sign in with MetaMask", exact: true })
+    .click();
+  await page
+    .getByText(/Request rejected in MetaMask/)
+    .first()
+    .waitFor();
+  rejectMethod = "";
+  switchDuringSign = true;
+  await page
+    .getByRole("button", { name: "Sign in with MetaMask", exact: true })
+    .click();
+  await page
+    .getByText(/Wallet changed during this request/)
+    .first()
+    .waitFor();
+  await page
+    .getByText("Sign in to check license status.", { exact: true })
     .waitFor();
   switchDuringSign = false;
   assert.equal(await contract.hasLicense(1, account), false);
   assert.equal(await page.locator(".session-timeline li").count(), 0);
-  await page.getByText("Not verified in this session", { exact: true }).waitFor();
+  await page
+    .getByText("Not verified in this session", { exact: true })
+    .waitFor();
+  await signIn();
   await page.getByRole("button", { name: "Download licensed model" }).click();
   await page
     .getByRole("status")
@@ -341,8 +484,10 @@ try {
       (value) => window.emitWalletEvent("accountsChanged", [value]),
       account,
     );
+    await signIn();
     await page.getByRole("button", { name: /License Owned/ }).waitFor();
   }
+  await respectApiBudget();
   const recoveredDownload = page.waitForEvent("download");
   await page.getByRole("button", { name: "Download licensed model" }).click();
   assert.deepEqual(
@@ -382,7 +527,7 @@ try {
     .getByText("Creator Revenue Accrued", { exact: true })
     .first()
     .waitFor();
-  for (const width of [1440, 768, 390]) {
+  for (const width of [1440, 1024, 768, 390]) {
     await page.setViewportSize({ width, height: 1000 });
     for (const route of [
       "",
@@ -391,6 +536,9 @@ try {
       "activity",
       "dashboard",
       "upload",
+      "login",
+      "signup",
+      "profile",
     ]) {
       await page.goto(origin + "/" + route);
       await page.waitForTimeout(400);
@@ -424,15 +572,74 @@ try {
     }
   }
   await page.setViewportSize({ width: 1440, height: 1000 });
+  // The visual matrix deliberately reloads many routes. Respect the real API
+  // limiter instead of weakening production protection for a synthetic burst.
+  await respectApiBudget(40);
   await page.goto(origin + "/model/1");
+  await signIn();
   await page.getByRole("button", { name: /License Owned/ }).waitFor();
+  // Fixture-only profile checks mismatch and unified logout, without live profile writes.
+  await page.evaluate(
+    async (linked) => {
+      const { walletSession } = await import("/src/walletSession.mjs");
+      walletSession.profile({
+        id: "profile-fixture",
+        email: "fixture@example.invalid",
+        user_metadata: {
+          full_name: "Fixture profile",
+          linked_wallet_address: linked,
+        },
+      });
+    },
+    await creator.getAddress(),
+  );
   await page
-    .locator(".model-access input[type=file]")
-    .setInputFiles({
-      name: "tampered.onnx",
-      mimeType: "application/octet-stream",
-      buffer: Buffer.from("tampered"),
-    });
+    .getByRole("heading", { name: "Wallet mismatch", exact: true })
+    .waitFor();
+  assert.equal(
+    await page
+      .getByRole("button", { name: "License Model", exact: true })
+      .count(),
+    0,
+  );
+  const mismatchTx = transactionRequests;
+  account = await creator.getAddress();
+  await page.evaluate(
+    (value) => window.emitWalletEvent("accountsChanged", [value]),
+    account,
+  );
+  await signIn();
+  await page
+    .getByRole("button", { name: "You own this model", exact: true })
+    .waitFor();
+  assert.equal(
+    transactionRequests,
+    mismatchTx,
+    "Profile/mismatch login sent a transaction",
+  );
+  await page
+    .getByRole("button", { name: "Fixture profile ▾", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Logout", exact: true }).click();
+  await page.getByRole("link", { name: "Sign in", exact: true }).waitFor();
+  assert.equal(
+    await page
+      .getByRole("button", { name: "Fixture profile ▾", exact: true })
+      .count(),
+    0,
+  );
+  account = await buyer3.getAddress();
+  await page.goto(origin + "/model/1");
+  await page
+    .getByText("Sign in to check license status.", { exact: true })
+    .waitFor();
+  await signIn();
+  await page.getByRole("button", { name: /License Owned/ }).waitFor();
+  await page.locator(".model-access input[type=file]").setInputFiles({
+    name: "tampered.onnx",
+    mimeType: "application/octet-stream",
+    buffer: Buffer.from("tampered"),
+  });
   await page
     .getByRole("status")
     .filter({ hasText: /verification failed/ })
@@ -442,10 +649,11 @@ try {
     fullPage: true,
   });
   await page.goto(origin + "/dashboard");
+  await signIn();
   await page.getByRole("link", { name: "Access & verify →" }).waitFor();
   await page.evaluate(() => window.emitWalletEvent("chainChanged", "0x1"));
   await page
-    .getByRole("button", { name: "Connect wallet", exact: true })
+    .getByRole("button", { name: "Sign in with MetaMask", exact: true })
     .last()
     .waitFor();
   await page.goto(origin + "/marketplace");
@@ -472,6 +680,7 @@ try {
   );
   account = await creator.getAddress();
   await page.goto(origin + "/dashboard");
+  await signIn();
   await page.getByRole("button", { name: "Withdraw", exact: true }).click();
   await page.waitForFunction(() => document.body.innerText.includes("0.0 ETH"));
   assert.equal(await contract.pendingWithdrawals(account), 0n);
@@ -481,21 +690,26 @@ try {
   wrongNetwork = true;
   await page.goto(origin + "/upload");
   await page.getByPlaceholder("Enter model name").fill("Wrong network");
+  await page.locator("input[type=file]").setInputFiles({
+    name: "model.bin",
+    mimeType: "application/octet-stream",
+    buffer: bytes,
+  });
+  assert.equal(
+    await page
+      .getByRole("button", { name: "Register Model", exact: true })
+      .isDisabled(),
+    true,
+  );
   await page
-    .locator("input[type=file]")
-    .setInputFiles({
-      name: "model.bin",
-      mimeType: "application/octet-stream",
-      buffer: bytes,
-    });
-  await page
-    .getByRole("button", { name: "Register Model", exact: true })
-    .click();
-  await page.getByText(/Select network 31337/).waitFor();
+    .getByRole("button", { name: "Switch network", exact: true })
+    .last()
+    .waitFor();
   wrongNetwork = false;
+  await page.evaluate(() => window.emitWalletEvent("chainChanged", "0x7a69"));
   reject = true;
   await page
-    .getByRole("button", { name: "Register Model", exact: true })
+    .getByRole("button", { name: "Sign in with MetaMask", exact: true })
     .click();
   await page.getByText(/rejected/i).waitFor();
   assert.equal(await contract.getModelCount(), 1n);
@@ -504,7 +718,7 @@ try {
     delete window.ethereum;
   });
   await page
-    .getByRole("button", { name: "Register Model", exact: true })
+    .getByRole("button", { name: "Sign in with MetaMask", exact: true })
     .click();
   await page
     .getByText("Install MetaMask to continue.", { exact: true })
@@ -512,15 +726,16 @@ try {
   await page.goto(origin + "/model/0");
   await page.getByRole("heading", { name: "Model Not Found" }).waitFor();
   await page.goto(origin + "/login");
-  await page
-    .getByRole("heading", { name: "Account services are not configured" })
-    .waitFor();
+  await page.getByRole("heading", { name: "Sign in to MontAI" }).waitFor();
   assert.deepEqual(errors, []);
   // A read outage must be explicit, recoverable and never look like empty history.
-  await page.route(rpc, route => route.abort());
+  await page.route(rpc, (route) => route.abort());
   await page.goto(origin + "/activity");
   await page.getByRole("button", { name: "Retry history" }).waitFor();
-  assert.equal(await page.getByText("No events in this block range.").count(), 0);
+  assert.equal(
+    await page.getByText("No events in this block range.").count(),
+    0,
+  );
   await page.unroute(rpc);
   await page.getByRole("button", { name: "Retry history" }).click();
   await page.getByText("Model Registered", { exact: true }).waitFor();

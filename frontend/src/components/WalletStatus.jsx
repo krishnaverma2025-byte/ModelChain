@@ -1,53 +1,90 @@
-import { useEffect, useState } from "react";
-import { NetworkBadge, Badge } from "./UI";
-import { config, wallet, short, errorText } from "../blockchain";
-
+import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
+import useIdentity from "../useIdentity";
+import { config, errorText } from "../blockchain";
+import {
+  disconnectWallet,
+  switchWallet,
+  switchNetwork,
+  logout,
+} from "../identity";
+import { CopyValue, NetworkBadge, Badge } from "./UI";
 export default function WalletStatus() {
-  const [account, setAccount] = useState("");
-  const [chain, setChain] = useState("");
-  const [error, setError] = useState("");
+  const state = useIdentity(),
+    ref = useRef(null);
+  const [open, setOpen] = useState(false),
+    [error, setError] = useState("");
   useEffect(() => {
-    const ethereum = window.ethereum;
-    if (!ethereum) return;
-    let disposed = false;
-    const accounts = (values) => {
-      if (!disposed) setAccount(values[0] || "");
+    const close = (e) => {
+      if (
+        e.key === "Escape" ||
+        (e.type === "pointerdown" && !ref.current?.contains(e.target))
+      )
+        setOpen(false);
     };
-    const network = (value) => {
-      if (!disposed) setChain(value);
-    };
-    ethereum
-      .request({ method: "eth_accounts" })
-      .then(accounts)
-      .catch(() => {});
-    ethereum
-      .request({ method: "eth_chainId" })
-      .then(network)
-      .catch(() => {});
-    ethereum.on("accountsChanged", accounts);
-    ethereum.on("chainChanged", network);
+    document.addEventListener("keydown", close);
+    document.addEventListener("pointerdown", close);
     return () => {
-      disposed = true;
-      ethereum.removeListener("accountsChanged", accounts);
-      ethereum.removeListener("chainChanged", network);
+      document.removeEventListener("keydown", close);
+      document.removeEventListener("pointerdown", close);
     };
   }, []);
-  async function connect() {
+  async function action(fn) {
+    setOpen(false);
     try {
-      const result = await wallet();
-      setAccount(result.address);
+      await fn();
       setError("");
-    } catch (err) {
-      setError(errorText(err));
+    } catch (e) {
+      setError(errorText(e));
     }
   }
-  const wrong = chain && BigInt(chain) !== config.chainId;
+  const wrong = state.chain && state.chain !== String(config.chainId);
   return (
-    <div className="wallet-status">
-      {wrong ? <Badge tone="error">Wrong network</Badge> : <NetworkBadge />}
-      <button onClick={connect} title={account || "Connect MetaMask"}>
-        {account ? short(account) : "Connect wallet"}
-      </button>
+    <div className="wallet-status" ref={ref}>
+      {wrong ? (
+        <>
+          <Badge tone="error">Wrong network</Badge>
+          <button onClick={() => action(switchNetwork)}>Switch network</button>
+        </>
+      ) : (
+        <NetworkBadge />
+      )}
+      {state.authenticated ? (
+        <div className="profile-menu-wrapper">
+          <button
+            aria-expanded={open}
+            aria-controls="wallet-menu"
+            onClick={() => setOpen(!open)}
+          >
+            ● {state.authenticated.slice(0, 6)}…{state.authenticated.slice(-4)}{" "}
+            ▾
+          </button>
+          {open && (
+            <div id="wallet-menu" className="profile-dropdown">
+              <p className="eyebrow">CONNECTED WALLET</p>
+              <CopyValue value={state.authenticated} label="wallet" compact />
+              <button onClick={() => action(switchWallet)}>
+                Switch wallet
+              </button>
+              <button onClick={() => action(disconnectWallet)}>
+                Disconnect wallet
+              </button>
+              {!state.profile && (
+                <Link to="/profile" onClick={() => setOpen(false)}>
+                  Profile & options
+                </Link>
+              )}
+              {!state.profile && (
+                <button onClick={() => action(logout)}>Logout</button>
+              )}
+            </div>
+          )}
+        </div>
+      ) : (
+        <Link className="login-button" to="/login">
+          Sign in
+        </Link>
+      )}
       {error && <small role="alert">{error}</small>}
     </div>
   );

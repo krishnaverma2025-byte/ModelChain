@@ -1,142 +1,121 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { supabase } from "../supabaseClient";
-import "./Login.css";
-
-function Login() {
-  const navigate = useNavigate();
-
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
-
-  const handleLogin = async (e) => {
+import useIdentity from "../useIdentity";
+import WalletGate from "../components/WalletGate";
+import { CopyValue } from "../components/UI";
+export default function Login() {
+  const identity = useIdentity();
+  const [email, setEmail] = useState(""),
+    [password, setPassword] = useState(""),
+    [busy, setBusy] = useState(false),
+    [message, setMessage] = useState("");
+  async function profileLogin(e) {
     e.preventDefault();
-
-    setLoading(true);
+    setBusy(true);
     setMessage("");
-
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (error) {
-      setMessage(error.message);
-      setLoading(false);
-      return;
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      if (error) throw error;
+      setMessage(
+        "Optional profile signed in. Blockchain access still requires your wallet signature.",
+      );
+    } catch (e) {
+      setMessage(e.message);
+    } finally {
+      setBusy(false);
     }
-
-    navigate("/");
-  };
-
-  const handleGoogleLogin = async () => {
-    setLoading(true);
-    setMessage("");
-
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/`,
-      },
-    });
-
-    if (error) {
-      setMessage(error.message);
-      setLoading(false);
+  }
+  async function google() {
+    setBusy(true);
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: window.location.origin + "/profile" },
+      });
+      if (error) throw error;
+    } catch (e) {
+      setMessage(e.message);
+    } finally {
+      setBusy(false);
     }
-  };
-
+  }
   return (
-    <div className="login-page">
-      <div className="login-card">
-
-        <div className="login-logo">
+    <main className="auth-page">
+      <section className="auth-card">
+        <Link className="navbar-logo" to="/">
           MontAI
-        </div>
-
-        <h1>Welcome Back</h1>
-
-        <p className="login-subtitle">
-          Sign in to manage your AI licenses.
+        </Link>
+        <p className="eyebrow">WALLET IDENTITY</p>
+        <h1>Sign in to MontAI</h1>
+        <p>
+          Use your Ethereum wallet to register models, manage licenses and
+          access protected downloads. Authentication is a free signature, not a
+          transaction.
         </p>
-
-        <form onSubmit={handleLogin}>
-
-          <div className="login-field">
-            <label>Email</label>
-
-            <input
-              type="email"
-              placeholder="you@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
+        {identity.authenticated ? (
+          <div className="notice">
+            <h3>Wallet authenticated</h3>
+            <CopyValue
+              value={identity.authenticated}
+              label="authenticated wallet"
             />
+            <Link to="/dashboard">Open your workspace →</Link>
           </div>
-
-          <div className="login-field">
-            <label>Password</label>
-
-            <input
-              type="password"
-              placeholder="Enter your password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-          </div>
-
-          <button
-            type="submit"
-            className="login-button"
-            disabled={loading}
-          >
-            {loading ? "Logging in..." : "Login"}
-          </button>
-
-        </form>
-
-        {/* GOOGLE LOGIN */}
-
-        <div className="google-divider">
-          <span>OR</span>
-        </div>
-
-        <button
-          type="button"
-          className="google-button"
-          onClick={handleGoogleLogin}
-          disabled={loading}
-        >
-          <span className="google-icon">G</span>
-          Continue with Google
-        </button>
-
-        {message && (
-          <div className="login-message">
-            {message}
-          </div>
+        ) : (
+          <WalletGate action="use blockchain features" />
         )}
-
-        <p className="signup-text">
-          First time using MontAI?{" "}
-          <span onClick={() => navigate("/signup")}>
-            Sign Up
-          </span>
+        <div className="auth-divider">Optional profile</div>
+        <p className="caption">
+          Google/email creates a human profile only. It does not grant
+          ownership, licenses or download access.
         </p>
-
-        <p
-          className="back-home"
-          onClick={() => navigate("/")}
-        >
-          ← Back to Home
+        {supabase ? (
+          <>
+            <button onClick={google} disabled={busy}>
+              Continue with Google
+            </button>
+            <form onSubmit={profileLogin}>
+              <label>
+                Email
+                <input
+                  type="email"
+                  autoComplete="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </label>
+              <label>
+                Password
+                <input
+                  type="password"
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+              </label>
+              <button type="submit" disabled={busy}>
+                {busy ? "Signing in…" : "Continue with Email"}
+              </button>
+            </form>
+          </>
+        ) : (
+          <p>
+            Optional profile services are not configured. Wallet sign-in remains
+            available.
+          </p>
+        )}
+        {message && <p role="status">{message}</p>}
+        <p>
+          New here? <Link to="/signup">Create profile</Link>
         </p>
-
-      </div>
-    </div>
+        <Link to="/marketplace">Browse without signing in →</Link>
+      </section>
+    </main>
   );
 }
-
-export default Login;

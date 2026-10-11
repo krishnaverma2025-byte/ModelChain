@@ -1,214 +1,88 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
-import { supabase } from "../supabaseClient";
-
+import useIdentity from "../useIdentity";
+import { logout } from "../identity";
+import { errorText } from "../blockchain";
 import WalletStatus from "./WalletStatus";
-
-function Navbar() {
-  const navigate = useNavigate();
-
-  const [user, setUser] = useState(null);
-  const [profile, setProfile] = useState(null);
-  const [menuOpen, setMenuOpen] = useState(false);
-
-  // Fetch profile from Supabase
-  const fetchProfile = async (currentUser) => {
-    if (!currentUser) {
-      setProfile(null);
-      return;
-    }
-
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("full_name, avatar_url")
-      .eq("id", currentUser.id)
-      .single();
-
-    if (error) {
-      console.error("Error fetching profile:", error);
-      setProfile(null);
-      return;
-    }
-
-    setProfile(data);
-  };
-
+export default function Navbar() {
+  const { profile } = useIdentity(),
+    navigate = useNavigate(),
+    ref = useRef(null);
+  const [open, setOpen] = useState(false),
+    [error, setError] = useState("");
   useEffect(() => {
-    if (!supabase) return;
-    // Get current logged-in user
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      const currentUser = session?.user ?? null;
-
-      setUser(currentUser);
-
-      if (currentUser) {
-        fetchProfile(currentUser);
-      }
-    });
-
-    // Listen for login/logout
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      const currentUser = session?.user ?? null;
-
-      setUser(currentUser);
-
-      if (currentUser) {
-        fetchProfile(currentUser);
-      } else {
-        setProfile(null);
-      }
-    });
-
+    const close = (e) => {
+      if (
+        e.key === "Escape" ||
+        (e.type === "pointerdown" && !ref.current?.contains(e.target))
+      )
+        setOpen(false);
+    };
+    document.addEventListener("keydown", close);
+    document.addEventListener("pointerdown", close);
     return () => {
-      subscription.unsubscribe();
+      document.removeEventListener("keydown", close);
+      document.removeEventListener("pointerdown", close);
     };
   }, []);
-
-  // Logout
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-
-    setUser(null);
-    setProfile(null);
-    setMenuOpen(false);
-
-    navigate("/");
-  };
-
-  // Reset password
-  const handleResetPassword = async () => {
-    if (!user?.email) return;
-
-    const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
-      redirectTo: `${window.location.origin}/login`,
-    });
-
-    if (error) {
-      alert(error.message);
-    } else {
-      alert("Password reset link has been sent to your email.");
-    }
-
-    setMenuOpen(false);
-  };
-
-  // Get user's name
-  const fullName =
-    profile?.full_name || user?.user_metadata?.full_name || "User";
-
-  // Get profile picture
-  const avatarUrl =
-    profile?.avatar_url ||
-    `https://ui-avatars.com/api/?name=${encodeURIComponent(
-      fullName,
-    )}&background=6d3df5&color=fff`;
-
+  const name = profile?.user_metadata?.full_name || profile?.email || "Profile";
   return (
     <header className="navbar">
-      {/* LOGO */}
       <Link to="/" className="navbar-logo">
         MontAI
       </Link>
-
-      {/* NAVIGATION */}
       <nav className="navbar-links" aria-label="Primary navigation">
         <NavLink to="/" end>
           Home
         </NavLink>
-        <NavLink to="/marketplace" end>
-          Marketplace
-        </NavLink>
-        <NavLink to="/upload-model" end>
-          Upload
-        </NavLink>
-        <NavLink to="/dashboard" end>
-          Dashboard
-        </NavLink>
+        <NavLink to="/marketplace">Marketplace</NavLink>
+        <NavLink to="/upload-model">Upload</NavLink>
+        <NavLink to="/dashboard">Dashboard</NavLink>
         <NavLink to="/activity">Activity</NavLink>
       </nav>
-
-      {/* RIGHT SIDE */}
       <div className="navbar-right">
         <WalletStatus />
-
-        {user ? (
-          <div className="profile-menu-wrapper">
-            {/* PROFILE BUTTON */}
+        {profile && (
+          <div className="profile-menu-wrapper" ref={ref}>
             <button
               className="profile-menu-button"
-              aria-expanded={menuOpen}
-              onClick={() => setMenuOpen(!menuOpen)}
+              aria-expanded={open}
+              onClick={() => setOpen(!open)}
             >
-              <img src={avatarUrl} alt="Profile" className="navbar-avatar" />
-
-              <span className="navbar-user-name">{fullName}</span>
-
-              <span className="dropdown-arrow">{menuOpen ? "▲" : "▼"}</span>
+              {name} ▾
             </button>
-
-            {/* PROFILE DROPDOWN */}
-            {menuOpen && (
+            {open && (
               <div className="profile-dropdown">
-                {/* PROFILE HEADER */}
-                <div className="dropdown-user">
-                  <img
-                    src={avatarUrl}
-                    alt="Profile"
-                    className="dropdown-avatar"
-                  />
-
-                  <div>
-                    <strong>{fullName}</strong>
-                  </div>
-                </div>
-
-                {/* DIVIDER */}
-                <div className="dropdown-divider" />
-
-                {/* VIEW PROFILE */}
-                <button
-                  onClick={() => {
-                    navigate("/profile");
-                    setMenuOpen(false);
-                  }}
-                >
+                <strong>{name}</strong>
+                <p>{profile.email}</p>
+                <Link to="/profile" onClick={() => setOpen(false)}>
                   View Profile
-                </button>
-
-                {/* EDIT PROFILE */}
+                </Link>
+                <Link to="/profile" onClick={() => setOpen(false)}>
+                  Edit Profile
+                </Link>
+                <Link to="/profile" onClick={() => setOpen(false)}>
+                  Linked Wallet
+                </Link>
                 <button
-                  onClick={() => {
-                    navigate("/profile");
-                    setMenuOpen(false);
+                  onClick={async () => {
+                    setOpen(false);
+                    try {
+                      await logout();
+                      navigate("/");
+                    } catch (e) {
+                      setError(errorText(e));
+                    }
                   }}
                 >
-                  Edit Profile
-                </button>
-
-                {/* RESET PASSWORD */}
-                <button onClick={handleResetPassword}>Reset Password</button>
-
-                {/* DIVIDER */}
-                <div className="dropdown-divider" />
-
-                {/* LOGOUT */}
-                <button className="logout-menu-button" onClick={handleLogout}>
                   Logout
                 </button>
               </div>
             )}
           </div>
-        ) : (
-          /* LOGIN */
-          <Link to="/login" className="login-button">
-            Login
-          </Link>
         )}
       </div>
+      {error && <p role="alert">{error}</p>}
     </header>
   );
 }
-
-export default Navbar;

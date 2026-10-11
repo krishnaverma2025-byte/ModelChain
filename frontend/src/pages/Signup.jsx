@@ -1,142 +1,93 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { supabase } from "../supabaseClient";
-import "./Signup.css";
-
-function Signup() {
-  const navigate = useNavigate();
-
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
-
-  const handleSignup = async (e) => {
+export default function Signup() {
+  const [email, setEmail] = useState(""),
+    [password, setPassword] = useState(""),
+    [busy, setBusy] = useState(false),
+    [message, setMessage] = useState("");
+  async function signup(e) {
     e.preventDefault();
-
-    setLoading(true);
-    setMessage("");
-
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-    });
-
-    if (error) {
-      setMessage(error.message);
-      setLoading(false);
-      return;
+    setBusy(true);
+    try {
+      const { error } = await supabase.auth.signUp({ email, password });
+      if (error) throw error;
+      setMessage(
+        "Profile created. Check your email, then optionally link your authenticated wallet from Profile.",
+      );
+    } catch (e) {
+      setMessage(e.message);
+    } finally {
+      setBusy(false);
     }
-
-    setMessage("Account created successfully! Check your email.");
-    setLoading(false);
-  };
-
-  const handleGoogleSignup = async () => {
-    setLoading(true);
-    setMessage("");
-
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: window.location.origin,
-      },
-    });
-
-    if (error) {
-      setMessage(error.message);
-      setLoading(false);
+  }
+  async function google() {
+    setBusy(true);
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: window.location.origin + "/profile" },
+      });
+      if (error) throw error;
+    } catch (e) {
+      setMessage(e.message);
+    } finally {
+      setBusy(false);
     }
-  };
-
+  }
   return (
-    <div className="signup-page">
-      <div className="signup-card">
-
-        <div className="signup-logo">
+    <main className="auth-page">
+      <section className="auth-card">
+        <Link to="/" className="navbar-logo">
           MontAI
-        </div>
-
-        <h1>Create Account</h1>
-
-        <p className="signup-subtitle">
-          Create your account to start using MontAI.
+        </Link>
+        <p className="eyebrow">OPTIONAL HUMAN PROFILE</p>
+        <h1>Create a MontAI profile</h1>
+        <p>
+          This creates a profile, not a blockchain wallet. Your wallet signature
+          and contract state determine blockchain access.
         </p>
-
-        <form onSubmit={handleSignup}>
-
-          <div className="signup-field">
-            <label>Email</label>
-
-            <input
-              type="email"
-              placeholder="you@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-          </div>
-
-          <div className="signup-field">
-            <label>Password</label>
-
-            <input
-              type="password"
-              placeholder="Enter your password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-          </div>
-
-          <button
-            type="submit"
-            className="signup-button"
-            disabled={loading}
-          >
-            {loading ? "Creating Account..." : "Sign Up"}
-          </button>
-
-        </form>
-
-        {/* GOOGLE SIGNUP */}
-        <div className="google-divider">
-          <span>OR</span>
-        </div>
-
-        <button
-          type="button"
-          className="google-button"
-          onClick={handleGoogleSignup}
-          disabled={loading}
-        >
-          <span className="google-icon">G</span>
-          Continue with Google
-        </button>
-
-        {message && (
-          <div className="signup-message">
-            {message}
-          </div>
+        {supabase ? (
+          <>
+            <button disabled={busy} onClick={google}>
+              Continue with Google
+            </button>
+            <form onSubmit={signup}>
+              <label>
+                Email
+                <input
+                  type="email"
+                  autoComplete="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </label>
+              <label>
+                Password
+                <input
+                  type="password"
+                  minLength={8}
+                  autoComplete="new-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+              </label>
+              <button disabled={busy} type="submit">
+                {busy ? "Creating profile…" : "Create profile"}
+              </button>
+            </form>
+          </>
+        ) : (
+          <p>
+            Optional profile services are not configured. You do not need a
+            profile to use your wallet.
+          </p>
         )}
-
-        <p className="login-text">
-          Already have an account?{" "}
-          <span onClick={() => navigate("/login")}>
-            Login
-          </span>
-        </p>
-
-        <p
-          className="back-home"
-          onClick={() => navigate("/")}
-        >
-          ← Back to Home
-        </p>
-
-      </div>
-    </div>
+        {message && <p role="status">{message}</p>}
+        <Link to="/login">Sign in with MetaMask →</Link>
+      </section>
+    </main>
   );
 }
-
-export default Signup;

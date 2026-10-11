@@ -6,15 +6,19 @@ import {
   config,
   wallet,
   assertCurrentWallet,
-  authenticate,
   api,
   hashFile,
   errorText,
 } from "../blockchain";
+import useIdentity from "../useIdentity";
+import WalletGate from "../components/WalletGate";
 
 function UploadModel() {
+  const identity = useIdentity();
   const navigate = useNavigate();
   const selection = useRef(0);
+  const operation = useRef(false);
+  const registration = useRef(null);
   const [fileHash, setFileHash] = useState(""),
     [hashPending, setHashPending] = useState(false),
     [stored, setStored] = useState(null),
@@ -58,7 +62,7 @@ function UploadModel() {
 
   const handleRegister = async (e) => {
     e.preventDefault();
-    if (loading || hashPending) return;
+    if (operation.current || loading || hashPending) return;
     setError("");
     setMessage("");
     if (
@@ -82,13 +86,13 @@ function UploadModel() {
       setError("Creator share must be a whole percentage from 0 to 100.");
       return;
     }
+    operation.current = true;
     setLoading(true);
     try {
       setStage("authentication");
-      const { signer, address, contract } = await wallet();
+      const { address, contract, headers } = await wallet();
       setSignerAddress(address);
-      setMessage("Sign a free authentication message in MetaMask.");
-      const headers = await authenticate(signer);
+      setMessage("Wallet authenticated. Preparing encrypted storage…");
       const form = new FormData();
       form.append("model", modelFile);
       form.append("name", modelName.trim());
@@ -96,12 +100,26 @@ function UploadModel() {
       form.append("category", category);
       setStage("storage");
       setMessage("Encrypting and storing your model off-chain…");
-      const uploaded = await (
-        await api("/api/uploads", { method: "POST", headers, body: form })
-      ).json();
+      const uploadKey = JSON.stringify([
+        address.toLowerCase(),
+        modelName.trim(),
+        description,
+        category,
+        fileHash,
+      ]);
+      if (registration.current && stored?.uploadKey !== uploadKey)
+        throw new Error(
+          "A registration is already submitted. Check Marketplace before starting another model registration.",
+        );
+      const uploaded =
+        stored?.uploadKey === uploadKey
+          ? stored
+          : await (
+              await api("/api/uploads", { method: "POST", headers, body: form })
+            ).json();
       if (uploaded.modelHash !== (await hashFile(modelFile)))
         throw new Error("Upload integrity mismatch.");
-      setStored(uploaded);
+      setStored({ ...uploaded, uploadKey });
       setStage("blockchain");
       await assertCurrentWallet(address);
       setMessage(
@@ -109,17 +127,23 @@ function UploadModel() {
           ? "Development storage: encrypted local bytes. Confirm registration in MetaMask."
           : "Encrypted IPFS upload complete. Confirm registration in MetaMask.",
       );
-      const tx = await contract.registerModel(
-        modelName.trim(),
-        uploaded.cid,
-        uploaded.modelHash,
-        ethers.parseEther(price),
-        Number(royalty),
-      );
+      const tx =
+        registration.current ||
+        (await contract.registerModel(
+          modelName.trim(),
+          uploaded.cid,
+          uploaded.modelHash,
+          ethers.parseEther(price),
+          Number(royalty),
+        ));
+      registration.current = tx;
       setMessage("Transaction submitted. Waiting for confirmation…");
       const receipt = await tx.wait();
-      if (receipt.status !== 1)
+      if (receipt.status !== 1) {
+        registration.current = null;
         throw new Error("Registration transaction failed.");
+      }
+      await assertCurrentWallet(address);
       setStage("confirmed");
       const event = receipt.logs
         .map((log) => {
@@ -143,6 +167,7 @@ function UploadModel() {
       setStage("failed");
       setError(errorText(err));
     } finally {
+      operation.current = false;
       setLoading(false);
     }
   };
@@ -169,6 +194,7 @@ function UploadModel() {
         <div className="upload-layout">
           <fieldset className="upload-card panel" disabled={loading}>
             <legend>01 / MODEL</legend>
+            <WalletGate action="register a model" />
 
             <div className="form-group">
               <label htmlFor="model-name">Model Name</label>
@@ -283,7 +309,7 @@ function UploadModel() {
             <button
               className="upload-button"
               onClick={handleRegister}
-              disabled={loading || hashPending}
+              disabled={loading || hashPending || !identity.authenticated}
             >
               {loading ? "Registering..." : "Register Model"}
             </button>
@@ -342,6 +368,11 @@ function UploadModel() {
               <h2>Registration</h2>
               <NetworkBadge />
               <p>Price: {price || "—"} ETH</p>
+              <p className="caption">
+                Creator receives: {royalty}% · Platform receives:{" "}
+                {100 - Number(royalty)}%. For 0.05 ETH at 90%: creator 0.045
+                ETH, platform 0.005 ETH.
+              </p>
               <CopyValue value={signerAddress} label="registration wallet" />
               <CopyValue value={config.address} label="contract" />
               <Badge

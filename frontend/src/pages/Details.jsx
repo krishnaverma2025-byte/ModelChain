@@ -16,6 +16,7 @@ import {
 import History from "../components/History";
 import useWalletRead from "../useWalletRead";
 import ModelAccess from "../components/ModelAccess";
+import WalletGate from "../components/WalletGate";
 
 function Details() {
   const { id } = useParams();
@@ -104,11 +105,9 @@ function Details() {
           priceWei: data.price,
         });
 
-        if (window.ethereum) {
+        if (address) {
           try {
-            const accounts = await window.ethereum.request({
-              method: "eth_accounts",
-            });
+            const accounts = [address];
 
             if (accounts.length > 0) {
               const alreadyLicensed = await contract.hasLicense(
@@ -153,7 +152,7 @@ function Details() {
       cancelled = true;
       requests.current++;
     };
-  }, [id, walletRevision]);
+  }, [id, walletRevision, address]);
 
   const handleLicense = async () => {
     const request = revision.current;
@@ -225,7 +224,7 @@ function Details() {
   const license = owner
     ? "CREATOR"
     : !address
-      ? "Connect wallet to check"
+      ? "Not authenticated"
       : !licenseKnown
         ? "License check unavailable"
         : licensed
@@ -292,21 +291,30 @@ function Details() {
             A license is recorded for the purchasing wallet. Encrypted delivery
             is authorized independently by the backend.
           </p>
-          <button
-            className="primary-button license-button"
-            onClick={handleLicense}
-            disabled={licensed || purchasing || !model.active || owner}
-          >
-            {licensed
-              ? "License Owned"
-              : purchasing
-                ? "Transaction Pending"
-                : owner
-                  ? "You own this model"
-                  : !model.active
-                    ? "Listing inactive"
-                    : "License Model"}
-          </button>
+          {!address && (
+            <>
+              <p className="eyebrow">YOUR ACCESS</p>
+              <p>Sign in to check license status.</p>
+              <WalletGate action="license this model" />
+            </>
+          )}
+          {address && (
+            <button
+              className="primary-button license-button"
+              onClick={handleLicense}
+              disabled={licensed || purchasing || !model.active || owner}
+            >
+              {licensed
+                ? "License Owned"
+                : purchasing
+                  ? "Transaction Pending"
+                  : owner
+                    ? "You own this model"
+                    : !model.active
+                      ? "Listing inactive"
+                      : "License Model"}
+            </button>
+          )}
           {success && (
             <p className="notice" role="status">
               {success}
@@ -317,7 +325,9 @@ function Details() {
               <Badge tone="error">FAILED</Badge> {error}
             </p>
           )}
-          <ModelAccess key={scope} id={model.id} onEvidence={record} />
+          {address && (
+            <ModelAccess key={scope} id={model.id} onEvidence={record} />
+          )}
         </aside>
       </div>
       <section className="panel history-panel">

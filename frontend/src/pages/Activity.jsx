@@ -50,11 +50,11 @@ export default function Activity() {
           <strong>{count ?? "Unavailable"}</strong>
         </article>
         <article>
-          <span>Connected Wallet</span>
+          <span>Authenticated wallet</span>
           {address ? (
             <CopyValue value={address} label="connected wallet" />
           ) : (
-            <span>Not connected</span>
+            <span>Not signed in</span>
           )}
         </article>
       </div>

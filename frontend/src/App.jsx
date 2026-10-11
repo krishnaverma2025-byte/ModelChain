@@ -12,24 +12,19 @@ import Login from "./pages/Login";
 import Profile from "./pages/Profile";
 import Signup from "./pages/Signup";
 import "./montai.css";
-import { supabase } from "./supabaseClient";
-
-const accountUnavailable = (
-  <main className="details-page">
-    <h1>Account services are not configured</h1>
-    <p>
-      Wallet licensing is available without a profile. Configure Supabase to
-      enable login, signup and profiles.
-    </p>
-  </main>
-);
+import "./auth.css";
+import { useEffect } from "react";
+import { initializeIdentity } from "./identity";
+import useIdentity from "./useIdentity";
 
 function App() {
+  const identity = useIdentity();
+  useEffect(initializeIdentity, []);
   return (
     <BrowserRouter>
-      <Navbar />
+      <Navbar key={`navbar:${identity.revision}`} />
 
-      <Routes>
+      <Routes key={`session:${identity.revision}`}>
         {/* HOME */}
         <Route path="/" element={<Home />} />
 
@@ -42,20 +37,11 @@ function App() {
         <Route path="/model/:id" element={<Details />} />
 
         {/* AUTHENTICATION */}
-        <Route
-          path="/login"
-          element={supabase ? <Login /> : accountUnavailable}
-        />
-        <Route
-          path="/signup"
-          element={supabase ? <Signup /> : accountUnavailable}
-        />
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
 
         {/* PROFILE */}
-        <Route
-          path="/profile"
-          element={supabase ? <Profile /> : accountUnavailable}
-        />
+        <Route path="/profile" element={<Profile />} />
 
         {/* ANY UNKNOWN URL */}
         <Route path="*" element={<Navigate to="/" replace />} />

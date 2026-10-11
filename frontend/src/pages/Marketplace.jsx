@@ -133,7 +133,7 @@ export default function Marketplace() {
             <p className="model-description">{m.description}</p>
             <div className="card-creator">
               <span>Creator</span>
-              <CopyValue value={m.owner} label="creator" />
+              <CopyValue value={m.owner} label="creator" compact />
             </div>
             <div className="model-footer">
               <strong>
