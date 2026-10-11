@@ -8,6 +8,7 @@ import {
   errorText,
 } from "./blockchain";
 import { supabase } from "./supabaseClient";
+import { switchConfiguredNetwork } from './networks.mjs';
 let loginCancellation = 0;
 let loginPending = false;
 export function initializeIdentity() {
@@ -125,11 +126,7 @@ export async function switchWallet() {
 }
 export async function switchNetwork() {
   disconnectWallet();
-  if (!window.ethereum) throw new Error("Install MetaMask to continue.");
-  await window.ethereum.request({
-    method: "wallet_switchEthereumChain",
-    params: [{ chainId: `0x${config.chainId.toString(16)}` }],
-  });
+  await switchConfiguredNetwork(window.ethereum, config.chainId, config.rpc);
 }
 export async function linkProfileWallet() {
   const state = walletSession.require(config.chainId);

@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { readContract, errorText, config } from "../blockchain";
-import { readEventPage, explorerTransaction } from "../activity";
+import { readEventPage } from "../activity";
 import { Badge, CopyValue } from "./UI";
+
+const eventRange = { span: config.chainId === 11155111n ? 10 : 2000, fromBlock: config.deploymentBlock };
 
 export default function History({ modelId, refresh = 0, onEvents }) {
   const revision = useRef(0);
@@ -21,7 +23,7 @@ export default function History({ modelId, refresh = 0, onEvents }) {
       setData(null);
       try {
         const c = await readContract();
-        const result = await readEventPage(c, { modelId });
+        const result = await readEventPage(c, { ...eventRange, modelId });
         if (active) {
           setData(result);
           onEvents?.(result.events);
@@ -43,7 +45,7 @@ export default function History({ modelId, refresh = 0, onEvents }) {
     setError("");
     try {
       const c = await readContract();
-      const page = await readEventPage(c, { modelId, toBlock: data.older });
+      const page = await readEventPage(c, { ...eventRange, modelId, toBlock: data.older });
       if (request !== revision.current) return;
       const merged = {
         ...page,
@@ -138,23 +140,6 @@ export default function History({ modelId, refresh = 0, onEvents }) {
                   </td>
                   <td>
                     <CopyValue value={e.transaction} label="transaction" />
-                    {explorerTransaction(
-                      config.chainId,
-                      e.transaction,
-                      import.meta.env.VITE_EXPLORER_URL,
-                    ) && (
-                      <a
-                        href={explorerTransaction(
-                          config.chainId,
-                          e.transaction,
-                          import.meta.env.VITE_EXPLORER_URL,
-                        )}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        Explorer
-                      </a>
-                    )}
                   </td>
                 </tr>
               ))}

@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 import Navbar from "./components/Navbar";
+import AccessServiceNotice from './components/AccessServiceNotice';
 
 import Activity from "./pages/Activity";
 import Home from "./pages/Home";
@@ -24,6 +25,7 @@ function App() {
   return (
     <BrowserRouter>
       <Navbar key={`navbar:${identity.revision}`} />
+      <AccessServiceNotice />
 
       <Routes key={`session:${identity.revision}`}>
         {/* HOME */}

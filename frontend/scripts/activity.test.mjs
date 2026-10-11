@@ -74,6 +74,13 @@ test("bounds historical queries, filters model events and excludes account withd
   const first = await readEventPage(c, { toBlock: 10 });
   assert.equal(first.from, 0);
   assert.equal(first.older, null);
+  calls.length = 0;
+  const sepolia = await readEventPage(c, { toBlock: 5000, span: 10, fromBlock: 4995 });
+  assert.equal(sepolia.from, 4995);
+  assert.equal(sepolia.older, null);
+  assert.ok(calls.every(x => x.end - x.start + 1 <= 10));
+  assert.equal((await readEventPage(c, { toBlock: 5000, span: 10, fromBlock: 4900 })).older, 4990);
+  await assert.rejects(readEventPage(c, { fromBlock: NaN }), /Invalid activity/);
   c.queryFilter = async () => {
     throw new Error("RPC unavailable");
   };

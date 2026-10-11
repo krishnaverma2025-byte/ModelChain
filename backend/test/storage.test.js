@@ -22,7 +22,7 @@ test('IPFS receives ciphertext only; wrapped keys survive restart; tampering fai
    }
    return new Response(pinned);
  };
- const storage=createStorage({directory,masterKey,pinataJwt:'test-only',production:true,fetchImpl});
+ const storage=createStorage({directory,masterKey,pinataJwt:'test-only',fetchImpl});
  const result=await storage.save(bytes,{fileName:'model.bin'},'0xowner');
  assert.equal(result.storage,'ipfs');assert.equal(result.wrappedKey,undefined);
  const record=await storage.record(cid);

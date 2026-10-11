@@ -7,7 +7,8 @@ import assert from 'node:assert/strict';
 import { createStorage } from '../src/storage.js';
 if(!process.env.PINATA_JWT) throw new Error('PINATA_JWT required in server environment');
 const directory=await mkdtemp(path.join(tmpdir(),'montai-live-ipfs-'));
-const storage=createStorage({directory,masterKey:randomBytes(32).toString('hex'),pinataJwt:process.env.PINATA_JWT,gateway:process.env.IPFS_GATEWAY,production:true});
+// Pinata-only development fixture, not a production persistent-store acceptance test.
+const storage=createStorage({directory,masterKey:randomBytes(32).toString('hex'),pinataJwt:process.env.PINATA_JWT,gateway:process.env.IPFS_GATEWAY});
 try {
  const bytes=Buffer.from('MontAI encrypted storage readiness fixture');
  const result=await storage.save(bytes,{fileName:'fixture.bin'},'0x0000000000000000000000000000000000000000');

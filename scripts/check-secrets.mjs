@@ -5,7 +5,7 @@ const files=[...new Set(execFileSync('git',['ls-files','--cached','--others','--
 const secrets=[];
 for(const file of ['.env','backend/.env']){
  if(!existsSync(file)||!statSync(file).isFile())continue;
- for(const match of readFileSync(file,'utf8').matchAll(/^(PINATA_JWT|MODEL_MASTER_KEY|SEPOLIA_PRIVATE_KEY)\s*=\s*(.*)$/gm)){
+ for(const match of readFileSync(file,'utf8').matchAll(/^(PINATA_JWT|MODEL_MASTER_KEY|SEPOLIA_PRIVATE_KEY|SUPABASE_SERVICE_ROLE_KEY)\s*=\s*(.*)$/gm)){
    const value=match[2].trim().replace(/^['"]|['"]$/g,'');if(value.length>=24)secrets.push(value);
  }
 }
@@ -20,7 +20,7 @@ function scan(file,text){
 }
 for(const file of files){
  if(!existsSync(file)||!statSync(file).isFile())continue;
- if(/(^|\/)\.env($|\.)/.test(file)&&!file.endsWith('.env.example')){hits.push(`${file}: environment file tracked`);continue;}
+ if(/(^|\/)\.env($|\.)/.test(file)&&!file.endsWith('.env.example')&&!file.endsWith('.env.production.example')){hits.push(`${file}: environment file tracked`);continue;}
  scan(file,readFileSync(file,'utf8'));
 }
 if(process.argv.includes('--history')){
@@ -31,7 +31,7 @@ if(process.argv.includes('--history')){
    const [hash,type,size]=info[i].split(' ');if(type!=='blob')continue;
    const name=objects[i].slice(hash.length+1);
    if(Number(size)>4*1024*1024){console.log(`History blob skipped (over 4 MB): ${name}`);continue;}
-   if(/(^|\/)\.env($|\.)/.test(name)&&!name.endsWith('.env.example'))hits.push(`history ${hash.slice(0,12)} ${name}: private environment file`);
+   if(/(^|\/)\.env($|\.)/.test(name)&&!name.endsWith('.env.example')&&!name.endsWith('.env.production.example'))hits.push(`history ${hash.slice(0,12)} ${name}: private environment file`);
    scan(`history ${hash.slice(0,12)} ${name}`,execFileSync('git',['cat-file','blob',hash],{encoding:'utf8',maxBuffer:5*1024*1024}));count++;
  }
  console.log(`Scanned ${count} history blobs across available refs.`);
