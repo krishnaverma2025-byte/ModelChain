@@ -8,7 +8,7 @@ import {
   switchNetwork,
   logout,
 } from "../identity";
-import { CopyValue, NetworkBadge, Badge } from "./UI";
+import { CopyValue, NetworkBadge, Badge, TestnetHelp } from "./UI";
 export default function WalletStatus() {
   const state = useIdentity(),
     ref = useRef(null);
@@ -62,6 +62,7 @@ export default function WalletStatus() {
           {open && (
             <div id="wallet-menu" className="profile-dropdown">
               <p className="eyebrow">CONNECTED WALLET</p>
+              <TestnetHelp />
               <CopyValue value={state.authenticated} label="wallet" compact />
               <button onClick={() => action(switchWallet)}>
                 Switch wallet

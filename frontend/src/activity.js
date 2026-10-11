@@ -44,10 +44,12 @@ export function describeEvent(log) {
 // Bounded pages avoid unbounded RPC requests. Errors are shown, never disguised as empty history.
 export async function readEventPage(
   contract,
-  { toBlock, modelId, span = 2000 } = {},
+  { toBlock, modelId, span = 2000, fromBlock = 0 } = {},
 ) {
+  if (!Number.isSafeInteger(span) || span < 1 || !Number.isSafeInteger(fromBlock) || fromBlock < 0) throw new Error('Invalid activity block range.');
   const end = toBlock ?? (await contract.runner.getBlockNumber());
-  const start = Math.max(0, end - span + 1);
+  if (end < fromBlock) return {events: [], from: fromBlock, to: end, older: null};
+  const start = Math.max(fromBlock, end - span + 1);
   const names = modelId
     ? EVENT_NAMES.filter((n) => n !== "RevenueWithdrawn")
     : EVENT_NAMES;
@@ -69,7 +71,7 @@ export async function readEventPage(
       .sort((a, b) => b.block - a.block || b.index - a.index),
     from: start,
     to: end,
-    older: start > 0 ? start - 1 : null,
+    older: start > fromBlock ? start - 1 : null,
   };
 }
 export function explorerTransaction(chainId, hash, base) {

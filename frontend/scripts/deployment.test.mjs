@@ -1,0 +1,48 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { randomBytes } from 'node:crypto';
+import { execFileSync } from 'node:child_process';
+import { readFileSync, readdirSync } from 'node:fs';
+import { networkInfo, explorerLink, switchConfiguredNetwork } from '../src/networks.mjs';
+import { accessFetch } from '../src/access-service.mjs';
+import { validatePublicEnvironment } from '../deployment-guard.mjs';
+const address='0x'+'a'.repeat(40),hash='0x'+'b'.repeat(64);
+test('localhost stays copy-only, Sepolia has authentic explorer/faucet links, unsupported chains cannot switch',async()=>{
+  assert.equal(networkInfo(31337).name,'Hardhat Local');
+  assert.equal(explorerLink(31337,'tx',hash),null);
+  assert.equal(networkInfo(11155111).name,'Sepolia Testnet');
+  assert.equal(explorerLink(11155111,'tx',hash),`https://sepolia.etherscan.io/tx/${hash}`);
+  assert.equal(explorerLink(11155111,'address',address),`https://sepolia.etherscan.io/address/${address}`);
+  assert.equal(explorerLink(1,'tx',hash),null);
+  assert.equal(explorerLink(11155111,'tx','javascript:bad'),null);
+  const calls=[];
+  const ethereum={request:async request=>{calls.push(request);if(calls.length===1)throw Object.assign(new Error('missing'),{code:4902});}};
+  await switchConfiguredNetwork(ethereum,11155111,'https://rpc.example.invalid');
+  assert.deepEqual(calls.map(c=>c.method),['wallet_switchEthereumChain','wallet_addEthereumChain','wallet_switchEthereumChain']);
+  assert.equal(calls[1].params[0].chainId,'0xaa36a7');
+  assert.equal(calls[1].params[0].nativeCurrency.decimals,18);
+  await assert.rejects(()=>switchConfiguredNetwork(ethereum,1,'https://rpc.example.invalid'),/Only Hardhat/);
+  let count=0;
+  await assert.rejects(()=>switchConfiguredNetwork({request:async()=>{count++;throw Object.assign(new Error('rejected'),{code:4001});}},11155111,'https://rpc.example.invalid'),/rejected/);
+  assert.equal(count,1);
+  await assert.rejects(()=>switchConfiguredNetwork({request:async()=>{throw Object.assign(new Error(),{code:4902});}},11155111,'http://rpc.invalid'),/HTTPS/);
+});
+test('cold-start notice handles success/failure with no request replay or fast-request interference',async()=>{
+  const slow=[], fast=[];let calls=0;
+  const slowRequest=accessFetch('fixture',{},async()=>{calls++;await new Promise(r=>setTimeout(r,1650));return new Response('ready');},state=>slow.push(state));
+  await accessFetch('fixture',{},async()=>new Response('fast'),state=>fast.push(state));
+  assert.equal((await slowRequest).status,200);assert.deepEqual(slow,[true,false]);assert.deepEqual(fast,[]);assert.equal(calls,1);
+  const failed=[];
+  await assert.rejects(()=>accessFetch('fixture',{},async()=>{await new Promise(r=>setTimeout(r,1550));throw new Error('unavailable');},state=>failed.push(state)),/unavailable/);
+  assert.deepEqual(failed,[true,false]);
+});
+test('build rejects public service-role credentials and backend-only key stays out of generated assets',()=>{
+  const canary='fixture-backend-only-'+randomBytes(24).toString('hex');
+  validatePublicEnvironment({VITE_SUPABASE_ANON_KEY:'public-fixture'}, {SUPABASE_SERVICE_ROLE_KEY:canary});
+  assert.throws(()=>validatePublicEnvironment({VITE_SUPABASE_SERVICE_ROLE_KEY:canary}),/Server-only/);
+  const token=['fixture',Buffer.from(JSON.stringify({role:'service_role'})).toString('base64url'),'fixture'].join('.');
+  assert.throws(()=>validatePublicEnvironment({VITE_SUPABASE_ANON_KEY:token}),/server-only/);
+  assert.throws(()=>validatePublicEnvironment({VITE_SUPABASE_ANON_KEY:canary},{SUPABASE_SERVICE_ROLE_KEY:canary}),/server-only/);
+  execFileSync(process.execPath,['node_modules/vite/bin/vite.js','build'],{cwd:new URL('..',import.meta.url),env:{...process.env,SUPABASE_SERVICE_ROLE_KEY:canary},stdio:'pipe'});
+  for(const name of readdirSync(new URL('../dist/assets/',import.meta.url))) assert.equal(readFileSync(new URL(`../dist/assets/${name}`,import.meta.url),'utf8').includes(canary),false);
+});

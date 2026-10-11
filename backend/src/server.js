@@ -1,9 +1,14 @@
 import { Contract, JsonRpcProvider, isAddress } from 'ethers';
 import { createApp } from './app.js';
 import { createStorage } from './storage.js';
+import { createRecordStore } from './record-store.js';
+import { deploymentConfig } from './config.js';
+async function start() {
+const {production,host,port}=deploymentConfig(process.env);
 const {RPC_URL,CONTRACT_ADDRESS,CHAIN_ID,MODEL_MASTER_KEY,PINATA_JWT,CLIENT_ORIGIN}=process.env;
 if(!RPC_URL || !isAddress(CONTRACT_ADDRESS) || !CHAIN_ID || !CLIENT_ORIGIN) throw new Error('Set RPC_URL, CONTRACT_ADDRESS, CHAIN_ID, CLIENT_ORIGIN');
 const provider=new JsonRpcProvider(RPC_URL,undefined,{cacheTimeout:-1});
+try {
 if((await provider.getNetwork()).chainId!==BigInt(CHAIN_ID)) throw new Error('RPC chain ID mismatch');
 if(await provider.getCode(CONTRACT_ADDRESS)==='0x') throw new Error('No contract at configured address');
 const chain=new Contract(CONTRACT_ADDRESS,[
@@ -14,5 +19,13 @@ const chain=new Contract(CONTRACT_ADDRESS,[
 const directory=`${process.env.DATA_DIR||'./data'}/${CHAIN_ID}-${CONTRACT_ADDRESS.toLowerCase()}`;
 if(process.env.NODE_ENV==='production' && new URL(CLIENT_ORIGIN).protocol!=='https:') throw new Error('Production CLIENT_ORIGIN must use HTTPS');
 if(process.env.IPFS_GATEWAY && new URL(process.env.IPFS_GATEWAY).protocol!=='https:') throw new Error('IPFS_GATEWAY must use HTTPS');
-const storage=createStorage({directory,masterKey:MODEL_MASTER_KEY,pinataJwt:PINATA_JWT,gateway:process.env.IPFS_GATEWAY,production:process.env.NODE_ENV==='production'});
-createApp({chain,storage,origin:CLIENT_ORIGIN,chainId:CHAIN_ID,contractAddress:CONTRACT_ADDRESS}).listen(Number(process.env.PORT||4000),process.env.HOST||'127.0.0.1',()=>console.log('MontAI access API ready'));
+const recordStore=process.env.SUPABASE_RECORD_BUCKET ? createRecordStore({url:process.env.SUPABASE_URL,serviceRoleKey:process.env.SUPABASE_SERVICE_ROLE_KEY,bucket:process.env.SUPABASE_RECORD_BUCKET,chainId:CHAIN_ID,contractAddress:CONTRACT_ADDRESS}) : undefined;
+if(recordStore) await recordStore.verifyPrivate();
+const storage=createStorage({directory,masterKey:MODEL_MASTER_KEY,pinataJwt:PINATA_JWT,gateway:process.env.IPFS_GATEWAY,production,recordStore});
+createApp({chain,storage,origin:CLIENT_ORIGIN,chainId:CHAIN_ID,contractAddress:CONTRACT_ADDRESS}).listen(port,host,()=>console.log('MontAI access API ready'));
+} catch(error) { provider.destroy(); throw error; }
+}
+start().catch(() => {
+  console.error('MontAI startup failed. Check required environment, RPC/contract and PRIVATE protected record bucket. Remote error details are suppressed to protect credentials.');
+  process.exitCode=1;
+});

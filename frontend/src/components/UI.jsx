@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { config, short } from "../blockchain";
+import { explorerLink, networkInfo } from '../networks.mjs';
 
 export function Badge({ children, tone = "neutral" }) {
   return <span className={`badge badge-${tone}`}>{children}</span>;
@@ -69,20 +70,21 @@ export function CopyValue({ value, label = "value", compact = false }) {
           <code>{value}</code>
         </details>
       )}
+      {!compact && explorerLink(config.chainId, /transaction/i.test(label) ? 'tx' : 'address', value) && <a className="caption" href={explorerLink(config.chainId, /transaction/i.test(label) ? 'tx' : 'address', value)} target="_blank" rel="noopener noreferrer">View on Etherscan ↗</a>}
     </span>
   );
 }
 export function NetworkBadge() {
   return (
     <Badge tone="info">
-      {config.chainId === 31337n
-        ? "Hardhat Local"
-        : config.chainId === 11155111n
-          ? "Sepolia"
-          : "Configured network"}{" "}
+      {networkInfo(config.chainId).name}{" "}
       · <code>{String(config.chainId)}</code>
     </Badge>
   );
+}
+export function TestnetHelp() {
+  const network=networkInfo(config.chainId);
+  return network.testnet ? <p className="caption">Sepolia Testnet · Test ETH only — no real money. <a href={network.faucet} target="_blank" rel="noopener noreferrer">Get test ETH ↗</a></p> : null;
 }
 export function Architecture() {
   return (

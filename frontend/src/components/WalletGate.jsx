@@ -2,7 +2,7 @@ import { useState } from "react";
 import useIdentity from "../useIdentity";
 import { signInWallet, switchWallet, switchNetwork } from "../identity";
 import { config, errorText } from "../blockchain";
-import { CopyValue, NetworkBadge } from "./UI";
+import { CopyValue, NetworkBadge, TestnetHelp } from "./UI";
 export default function WalletGate({ action = "continue" }) {
   const state = useIdentity();
   const [busy, setBusy] = useState(false),
@@ -70,6 +70,7 @@ export default function WalletGate({ action = "continue" }) {
       {(error || state.status) && (
         <p role={error ? "alert" : "status"}>{error || state.status}</p>
       )}
+      <TestnetHelp />
     </section>
   );
 }

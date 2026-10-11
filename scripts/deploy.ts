@@ -28,12 +28,14 @@ async function main() {
     await modelChain.waitForDeployment();
 
     const address = await modelChain.getAddress();
+    const receipt = await modelChain.deploymentTransaction()?.wait();
 
     console.log("ModelChain deployed to:");
     console.log(address);
+    console.log(`Deployment transaction: ${receipt?.hash}; block: ${receipt?.blockNumber}`);
 }
 
-main().catch((error) => {
-    console.error(error);
+main().catch(() => {
+    console.error("Deployment failed. Check network, private configuration, dedicated deployer balance and explicit testnet approval. RPC/key error details are suppressed.");
     process.exitCode = 1;
 });

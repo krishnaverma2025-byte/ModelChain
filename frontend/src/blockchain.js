@@ -7,12 +7,14 @@ import {
   verifyMessage,
 } from "ethers";
 import { walletSession } from "./walletSession.mjs";
+import { accessFetch } from './access-service.mjs';
 const production = import.meta.env.PROD;
 export const config = {
   rpc:
     import.meta.env.VITE_RPC_URL || (production ? "" : "http://127.0.0.1:8545"),
   chainId: BigInt(import.meta.env.VITE_CHAIN_ID || (production ? 0 : 31337)),
   address: import.meta.env.VITE_CONTRACT_ADDRESS || "",
+  deploymentBlock: Number(import.meta.env.VITE_DEPLOYMENT_BLOCK || 0),
   api:
     import.meta.env.VITE_API_URL || (production ? "" : "http://127.0.0.1:4000"),
 };
@@ -28,7 +30,7 @@ export const ABI = [
   ...EVENT_ABI,
 ];
 export async function readContract() {
-  if (!config.rpc || config.chainId <= 0n)
+  if (!config.rpc || ![31337n,11155111n].includes(config.chainId))
     throw new Error(
       "Configure VITE_RPC_URL and VITE_CHAIN_ID for this deployment.",
     );
@@ -195,7 +197,7 @@ export async function api(path, options = {}) {
     new URL(config.api).protocol !== "https:"
   )
     throw new Error("Public model access API must use HTTPS.");
-  const response = await fetch(config.api + path, options);
+  const response = await accessFetch(config.api + path, options, fetch, pending => window.dispatchEvent(new CustomEvent('montai-access-service',{detail:pending})));
   if (!response.ok) {
     if (response.status === 429)
       throw new Error("Too many requests. Wait a moment before retrying.");
