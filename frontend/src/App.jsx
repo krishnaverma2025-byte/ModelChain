@@ -13,6 +13,7 @@ import Profile from "./pages/Profile";
 import Signup from "./pages/Signup";
 import "./montai.css";
 import "./auth.css";
+import "./marketplace-refinement.css";
 import { useEffect } from "react";
 import { initializeIdentity } from "./identity";
 import useIdentity from "./useIdentity";

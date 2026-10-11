@@ -33,8 +33,8 @@ export default function Activity() {
       <header className="page-heading">
         <div>
           <p className="eyebrow">PROTOCOL / EXPLORER</p>
-          <h1>Protocol Activity</h1>
-          <p>The public record behind every model license.</p>
+          <h1>Network Activity</h1>
+          <p>On-chain activity behind MontAI registrations and licenses.</p>
         </div>
         <button onClick={() => setRefresh((n) => n + 1)}>
           Refresh chain data

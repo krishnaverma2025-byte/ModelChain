@@ -116,10 +116,13 @@ try {
     },
   );
   await ready(origin, viteLog);
-  browser = await chromium.launch();
+  browser = await chromium.launch(
+    process.env.MONTAI_TEST_BROWSER === "chrome" ? { channel: "chrome" } : {},
+  );
   const page = await browser.newPage({
     viewport: { width: 1440, height: 1000 },
   });
+  page.setDefaultTimeout(30000);
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message));
   page.on("console", (message) => {
@@ -517,7 +520,7 @@ try {
     true,
   );
   await page.goto(origin + "/activity");
-  await page.getByRole("heading", { name: "Protocol Activity" }).waitFor();
+  await page.getByRole("heading", { name: "Network Activity" }).waitFor();
   await page.getByText("License Purchased", { exact: true }).first().waitFor();
   assert.equal(
     await page.getByRole("link", { name: "Explorer", exact: true }).count(),
@@ -527,6 +530,26 @@ try {
     .getByText("Creator Revenue Accrued", { exact: true })
     .first()
     .waitFor();
+  // Discovery uses real registered listings, query navigation, and explicit empty states.
+  await respectApiBudget();
+  await page.goto(origin + "/");
+  await page.locator(".model-card").waitFor();
+  assert.equal(await page.locator(".model-card").count(), 1);
+  await page.getByLabel("Find your next model").fill("Verified vision");
+  await page.getByRole("button", { name: "Search models" }).click();
+  await page.waitForURL("**/marketplace?q=Verified+vision");
+  await page.locator(".model-card").waitFor();
+  assert.equal(await page.locator(".model-card").count(), 1);
+  assert.equal(await page.locator(".model-card details").count(), 0);
+  await page
+    .getByRole("button", { name: "Generative AI", exact: true })
+    .click();
+  await page.getByRole("heading", { name: "No models available" }).waitFor();
+  await page
+    .getByRole("button", { name: "Computer Vision", exact: true })
+    .click();
+  await page.locator(".model-card").waitFor();
+  assert.equal(await page.locator(".verified-registration").count(), 1);
   for (const width of [1440, 1024, 768, 390]) {
     await page.setViewportSize({ width, height: 1000 });
     for (const route of [
@@ -542,6 +565,21 @@ try {
     ]) {
       await page.goto(origin + "/" + route);
       await page.waitForTimeout(400);
+      if (["", "marketplace"].includes(route)) {
+        await page.locator(".model-card").waitFor();
+        const columns = await page
+          .locator(".models-grid")
+          .evaluate(
+            (element) =>
+              getComputedStyle(element).gridTemplateColumns.split(" ").length,
+          );
+        assert.equal(columns, width > 1024 ? 3 : width > 600 ? 2 : 1);
+        if (!route)
+          assert.match(
+            await page.locator("h1").innerText(),
+            /license\s+verified/,
+          );
+      }
       assert.ok(
         await page.evaluate(
           () => document.documentElement.scrollWidth <= window.innerWidth,

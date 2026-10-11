@@ -4,6 +4,17 @@ import { config, short } from "../blockchain";
 export function Badge({ children, tone = "neutral" }) {
   return <span className={`badge badge-${tone}`}>{children}</span>;
 }
+// Render only for models successfully read from the configured contract.
+export function VerifiedBadge() {
+  return (
+    <span
+      className="verified-registration"
+      title="Registration and integrity metadata are verifiable from MontAI's smart contract. This does not guarantee model quality or safety."
+    >
+      ✓ Verified on-chain
+    </span>
+  );
+}
 export function Icon({ name = "cube" }) {
   const paths = {
     cube: "M12 3 3 8v9l9 5 9-5V8L12 3Zm0 9L3 8m9 4 9-4m-9 4v10",

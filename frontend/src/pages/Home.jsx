@@ -1,67 +1,148 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { categories, loadCatalog } from "../catalog";
+import { errorText } from "../blockchain";
+import ModelCard from "../components/ModelCard";
 import { Architecture, Badge, Icon } from "../components/UI";
 export default function Home() {
+  const navigate = useNavigate();
+  const [models, setModels] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  useEffect(() => {
+    let active = true;
+    loadCatalog()
+      .then((items) => {
+        if (active)
+          setModels(
+            items
+              .filter((m) => m.active)
+              .reverse()
+              .slice(0, 3),
+          );
+      })
+      .catch((e) => {
+        if (active) setError(errorText(e));
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
   return (
     <main className="page home-page">
       <section className="home-intro">
         <div>
-          <p className="eyebrow">MONTAI / MODEL LICENSING INFRASTRUCTURE</p>
+          <p className="eyebrow">THE MARKETPLACE FOR INDEPENDENT AI CREATORS</p>
           <h1>
-            License AI models with
-            <br />
-            <span>verifiable provenance.</span>
+            Discover and license <br />
+            <span>verified AI models.</span>
           </h1>
           <p className="lead">
-            Register, license and verify AI models using blockchain-backed
-            ownership and encrypted decentralized storage.
+            Explore AI models from independent creators with blockchain-backed
+            ownership, licensing and integrity verification.
+          </p>
+          <p className="caption">
+            On-chain verification confirms registration metadata, not model
+            quality or safety.
           </p>
           <div className="actions">
             <Link className="primary-button" to="/marketplace">
               Explore Models <Icon name="arrow" />
             </Link>
             <Link className="secondary-button" to="/upload-model">
-              Register Model
+              Publish a Model
             </Link>
           </div>
         </div>
-        <aside
-          className="registry-illustration"
-          aria-label="Traceability layers"
-        >
-          <div className="illustration-top">
-            <Icon name="trace" />
-            <span>A verifiable chain of evidence</span>
-          </div>
-          {[
-            ["01", "Creator → Model", "Wallet-bound registration"],
-            ["02", "Model → License", "On-chain ownership record"],
-            ["03", "License → Access", "Independent authorization"],
-            ["04", "Download → Hash", "Local integrity verification"],
-          ].map(([n, title, text]) => (
-            <div className="trace-step" key={n}>
-              <code>{n}</code>
-              <div>
-                <strong>{title}</strong>
-                <p>{text}</p>
-              </div>
-            </div>
-          ))}
-          <p className="caption">
-            Public proof. Encrypted storage. Verifiable delivery.
-          </p>
-        </aside>
       </section>
+      <form
+        action="/marketplace"
+        className="home-search"
+        role="search"
+        onSubmit={(event) => {
+          event.preventDefault();
+          const query = new FormData(event.currentTarget).get("q").trim();
+          navigate(
+            `/marketplace${query ? `?${new URLSearchParams({ q: query })}` : ""}`,
+          );
+        }}
+      >
+        <label htmlFor="catalog-search">Find your next model</label>
+        <div>
+          <input
+            id="catalog-search"
+            name="q"
+            type="search"
+            placeholder="Search models, creators or categories…"
+          />
+          <button className="primary-button" type="submit">
+            Search models <Icon name="arrow" />
+          </button>
+        </div>
+      </form>
+      <nav className="category-tabs" aria-label="Browse model categories">
+        <Link to="/marketplace">All</Link>
+        {categories.map((category) => (
+          <Link
+            key={category}
+            to={`/marketplace?category=${encodeURIComponent(category)}`}
+          >
+            {category}
+          </Link>
+        ))}
+      </nav>
+      <section
+        className="recent-models"
+        aria-labelledby="recent-models-heading"
+      >
+        <div className="section-head">
+          <div>
+            <p className="eyebrow">DIRECT FROM CREATORS</p>
+            <h2 id="recent-models-heading">Recently registered models</h2>
+          </div>
+          <Link to="/marketplace">Explore all models →</Link>
+        </div>
+        {loading && <p role="status">Loading models from the blockchain…</p>}
+        {error && (
+          <p className="error" role="alert">
+            {error}
+          </p>
+        )}
+        {!loading && !error && !models.length && (
+          <div className="empty-state">
+            <h3>A marketplace ready for your model</h3>
+            <p>
+              No active registrations yet. Publish a model to make it
+              discoverable.
+            </p>
+            <Link to="/upload-model">Publish a Model →</Link>
+          </div>
+        )}
+        <div className="models-grid">
+          {!error &&
+            models.map((model) => <ModelCard key={model.id} model={model} />)}
+        </div>
+      </section>
+      <h2 className="section-heading">Why MontAI</h2>
       <section className="capabilities">
         {[
           [
             "trace",
-            "MODEL PROVENANCE",
+            "VERIFIABLE PROVENANCE",
             "Blockchain-backed creator and model registration.",
           ],
           [
             "cube",
-            "LICENSE OWNERSHIP",
+            "WALLET-BOUND LICENSING",
             "Smart contracts record model licenses and payments.",
+          ],
+          [
+            "shield",
+            "ENCRYPTED DELIVERY",
+            "Only encrypted model files are uploaded to off-chain storage.",
           ],
           [
             "shield",
