@@ -1,34 +1,30 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { formatEther } from "ethers";
-import { readContract, metadata, errorText } from "../blockchain";
-import { Badge, CopyValue, Icon } from "../components/UI";
+import { Link, useSearchParams } from "react-router-dom";
+import { errorText } from "../blockchain";
+import { categories, loadCatalog } from "../catalog";
+import ModelCard from "../components/ModelCard";
+import { Icon } from "../components/UI";
 export default function Marketplace() {
+  const [params, setParams] = useSearchParams();
+  const query = params.get("q") || "";
+  const category = params.get("category") || "All categories";
+  function filter(key, value) {
+    const next = new URLSearchParams(params);
+    if (value && value !== "All categories") next.set(key, value);
+    else next.delete(key);
+    setParams(next, { replace: true });
+  }
   const [models, setModels] = useState([]),
     [loading, setLoading] = useState(true),
     [error, setError] = useState(""),
-    [query, setQuery] = useState(""),
-    [category, setCategory] = useState("All categories"),
     [status, setStatus] = useState("Active"),
     [revision, setRevision] = useState(0);
   useEffect(() => {
     let active = true;
     async function load() {
+      setLoading(true);
       try {
-        const c = await readContract();
-        const count = await c.getModelCount();
-        const items = [];
-        for (let id = 1n; id <= count; id++) {
-          const m = await c.getModel(id);
-          items.push({
-            id: String(m.id),
-            name: m.name,
-            owner: m.owner,
-            active: m.active,
-            price: formatEther(m.price),
-            ...(await metadata(id)),
-          });
-        }
+        const items = await loadCatalog();
         if (active) {
           setModels(items);
           setError("");
@@ -48,7 +44,7 @@ export default function Marketplace() {
     (m) =>
       (status === "All statuses" || m.active === (status === "Active")) &&
       (category === "All categories" || m.category === category) &&
-      [m.name, m.description, m.owner, m.id].some((v) =>
+      [m.name, m.description, m.owner, m.id, m.category].some((v) =>
         v?.toLowerCase().includes(query.toLowerCase()),
       ),
   );
@@ -56,12 +52,9 @@ export default function Marketplace() {
     <main className="page marketplace-page">
       <header className="page-heading">
         <div>
-          <p className="eyebrow">MODEL REGISTRY</p>
-          <h1>Discover AI Models</h1>
-          <p>
-            Explore registered models. Inspect their provenance before you
-            license.
-          </p>
+          <p className="eyebrow">MONTAI MARKETPLACE</p>
+          <h1>Explore AI Models</h1>
+          <p>Find verified AI model registrations from independent creators.</p>
         </div>
         <Link className="primary-button" to="/upload-model">
           Register Model <Icon name="arrow" />
@@ -74,20 +67,24 @@ export default function Marketplace() {
             type="search"
             placeholder="Name, description, creator or model ID"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => filter("q", e.target.value)}
           />
         </label>
         <label>
           Category
           <select
             value={category}
-            onChange={(e) => setCategory(e.target.value)}
+            onChange={(e) => filter("category", e.target.value)}
           >
-            {["All categories", ...new Set(models.map((m) => m.category))].map(
-              (c) => (
-                <option key={c}>{c}</option>
-              ),
-            )}
+            {[
+              "All categories",
+              ...new Set([
+                ...categories,
+                ...models.map((m) => m.category).filter(Boolean),
+              ]),
+            ].map((c) => (
+              <option key={c}>{c}</option>
+            ))}
           </select>
         </label>
         <label>
@@ -97,9 +94,22 @@ export default function Marketplace() {
               <option key={s}>{s}</option>
             ))}
           </select>
-          <button onClick={() => setRevision((n) => n + 1)}>Refresh</button>
         </label>
+        <button onClick={() => setRevision((n) => n + 1)} disabled={loading}>
+          Refresh
+        </button>
       </div>
+      <nav className="category-tabs" aria-label="Model categories">
+        {["All categories", ...categories].map((item) => (
+          <button
+            key={item}
+            aria-pressed={category === item}
+            onClick={() => filter("category", item)}
+          >
+            {item === "All categories" ? "All" : item}
+          </button>
+        ))}
+      </nav>
       {loading && <p role="status">Loading models from the blockchain…</p>}
       {error && (
         <p role="alert" className="error">
@@ -108,7 +118,7 @@ export default function Marketplace() {
       )}
       {!loading && !error && (
         <p className="caption">
-          {visible.length} matching models · Blockchain-backed registry
+          {visible.length} matching models · Registration verifiable on-chain
         </p>
       )}
       {!loading && !error && !visible.length && (
@@ -118,31 +128,9 @@ export default function Marketplace() {
         </div>
       )}
       <div className="models-grid">
-        {visible.map((m) => (
-          <article className="model-card" key={m.id}>
-            <div className="section-head">
-              <span className="model-category">{m.category}</span>
-              <Badge tone={m.active ? "success" : "neutral"}>
-                {m.active ? "ACTIVE" : "INACTIVE"}
-              </Badge>
-            </div>
-            <p className="caption">
-              MODEL <code>#{m.id}</code>
-            </p>
-            <h2>{m.name}</h2>
-            <p className="model-description">{m.description}</p>
-            <div className="card-creator">
-              <span>Creator</span>
-              <CopyValue value={m.owner} label="creator" compact />
-            </div>
-            <div className="model-footer">
-              <strong>
-                {m.price} <span>ETH</span>
-              </strong>
-              <Link to={`/model/${m.id}`}>View Model Details →</Link>
-            </div>
-          </article>
-        ))}
+        {!loading &&
+          !error &&
+          visible.map((m) => <ModelCard model={m} key={m.id} />)}
       </div>
     </main>
   );

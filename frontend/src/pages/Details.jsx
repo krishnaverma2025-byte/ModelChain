@@ -7,7 +7,7 @@ import {
   purchaseModelLicense,
   errorText,
 } from "../blockchain";
-import { Badge } from "../components/UI";
+import { Badge, CopyValue, VerifiedBadge } from "../components/UI";
 import {
   ProvenanceDrawer,
   ProvenanceFields,
@@ -244,49 +244,42 @@ function Details() {
       <header className="page-heading details-header">
         <div>
           <p className="eyebrow">
-            MODEL REGISTRY / <code>#{model.id}</code> / {model.category}
+            {model.category} / <code>#{model.id}</code>
           </p>
           <h1>{model.name}</h1>
           <p>{model.description}</p>
+          <div className="details-creator">
+            <span>Creator</span>
+            <CopyValue value={model.creator} label="creator" compact />
+          </div>
           <div className="actions">
             <Badge tone={model.active ? "success" : "neutral"}>
               {model.active ? "ACTIVE" : "INACTIVE"}
             </Badge>
             <Badge tone={licensed ? "success" : "neutral"}>{license}</Badge>
+            <VerifiedBadge />
           </div>
         </div>
         <button className="secondary-button" onClick={() => setTrace(true)}>
           Trace Model
         </button>
       </header>
+      <nav className="details-sections" aria-label="Model sections">
+        <a href="#model-overview">Overview</a>
+        <a href="#model-provenance">Provenance</a>
+        <a href="#model-access">License / Access</a>
+        <a href="#model-history">History</a>
+      </nav>
       <div className="details-grid">
-        <div className="details-left">
-          <section className="panel">
-            <p className="eyebrow">01 / ABOUT</p>
-            <h2>The model, on record</h2>
-            <p>{model.about}</p>
-            <p className="caption">
-              Creator share: {model.royalty}. Wallet-bound access; no resale or
-              usage-rights enforcement.
-            </p>
-          </section>
-          <section className="panel">
-            <p className="eyebrow">02 / PROVENANCE</p>
-            <h2>Verifiable references</h2>
-            <ProvenanceFields
-              model={model}
-              license={license}
-              registration={registration}
-              integrity={integrity}
-            />
-          </section>
-        </div>
-        <aside className="license-card panel">
-          <p className="eyebrow">03 / LICENSE</p>
+        <aside className="license-card panel" id="model-access">
+          <p className="eyebrow">WALLET-BOUND LICENSE</p>
           <h2>Model access</h2>
           <div className="license-price">
             {model.price} <span>ETH</span>
           </div>
+          <Badge tone={model.active ? "success" : "neutral"}>
+            {model.active ? "ACTIVE" : "INACTIVE"}
+          </Badge>
           <p>
             A license is recorded for the purchasing wallet. Encrypted delivery
             is authorized independently by the backend.
@@ -329,8 +322,29 @@ function Details() {
             <ModelAccess key={scope} id={model.id} onEvidence={record} />
           )}
         </aside>
+        <div className="details-left">
+          <section className="panel" id="model-overview">
+            <p className="eyebrow">OVERVIEW</p>
+            <h2>About this model</h2>
+            <p>{model.about}</p>
+            <p className="caption">
+              Creator share: {model.royalty}. Wallet-bound access; no resale or
+              usage-rights enforcement.
+            </p>
+          </section>
+          <section className="panel" id="model-provenance">
+            <p className="eyebrow">PROVENANCE</p>
+            <h2>Verifiable references</h2>
+            <ProvenanceFields
+              model={model}
+              license={license}
+              registration={registration}
+              integrity={integrity}
+            />
+          </section>
+        </div>
       </div>
-      <section className="panel history-panel">
+      <section className="panel history-panel" id="model-history">
         <div className="section-head">
           <div>
             <p className="eyebrow">04 / MODEL HISTORY</p>

@@ -191,6 +191,16 @@ function UploadModel() {
           licensing.
         </p>
 
+        <ol className="publish-stepper" aria-label="Model publishing stages">
+          {["Model", "Security", "Storage", "Blockchain"].map(
+            (label, index) => (
+              <li key={label}>
+                <code>{index + 1}</code>
+                <span>{label}</span>
+              </li>
+            ),
+          )}
+        </ol>
         <div className="upload-layout">
           <fieldset className="upload-card panel" disabled={loading}>
             <legend>01 / MODEL</legend>
@@ -285,7 +295,7 @@ function UploadModel() {
             {message && (
               <p
                 style={{
-                  color: "#4ade80",
+                  color: "#0E7C61",
                   marginTop: "15px",
                   textAlign: "center",
                 }}
@@ -297,7 +307,7 @@ function UploadModel() {
             {error && (
               <p
                 style={{
-                  color: "#ff6b6b",
+                  color: "#C53030",
                   marginTop: "15px",
                   textAlign: "center",
                 }}
