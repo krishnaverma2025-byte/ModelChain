@@ -1,114 +1,72 @@
-# MontAI — Discover → License → Access → Verify
+# MontAI — verifiable AI model licensing
 
-MontAI is an academic AI-model marketplace implemented with React, Ethereum smart contracts, encrypted IPFS storage and a Node.js access API. The core creator/buyer lifecycle works locally. Public deployment has not been performed.
+MontAI is an academic AI model marketplace that connects encrypted model delivery with Ethereum ownership, license payments and file integrity records. Creators publish a model and choose a price and revenue share; buyers purchase a wallet-bound license and receive a verified download.
 
-## Implemented architecture
+## What it solves
 
-- **ModelChain (Solidity):** authoritative 1-based model IDs, creator, name, storage CID, original hash, price, creator-share percentage, active state and wallet licenses.
-- **React + ethers:** public catalogue reads through the configured RPC; MetaMask signs registration, purchases and withdrawals with the selected wallet.
-- **Node.js access API:** authenticates wallet signatures, independently checks on-chain ownership/licenses, and decrypts authorized downloads. It does not trust browser license flags.
-- **Pinata V3 / IPFS:** stores only AES-256-GCM ciphertext. Public knowledge of the CID provides ciphertext, not plaintext or keys.
-- **Protected backend volume:** stores ciphertext cache, description/category metadata and per-file keys wrapped by MODEL_MASTER_KEY.
-- **Supabase (optional):** login, profiles and avatars only. It is not authoritative for models, prices, ownership or licenses. Core wallet E2E runs with Supabase disabled.
+Model sharing often separates payment, ownership records and the delivered file. MontAI links a model's creator address, encrypted storage identifier and original SHA-256 hash to an on-chain registry. The backend checks ownership or a purchased license before delivering the original bytes. This provides auditable registration and licensing evidence while keeping large files off-chain.
 
-This is decentralized registration/licensing with a server-operated key-delivery service, not a fully decentralized access system.
+## Public demo
 
-## Creator flow
+| Item | Current public test deployment |
+| --- | --- |
+| Website | https://montai-six.vercel.app |
+| API base | https://montai-api.onrender.com |
+| Health | https://montai-api.onrender.com/health |
+| Network / chain ID | Ethereum Sepolia / `11155111` |
+| ModelChain contract | `0x50Af9D424C10D596ddb5f5cF9A18Fc193a73e97e` |
+| Deployment block | `11907790` |
+| Deployment transaction | `0x0008dfc1e032112a0fa6f988a7b35f1b1e198210abd89e33334cc9c43ba85fd7` |
 
-Connect MetaMask → choose a supported model file (maximum 25 MB) and metadata → sign a free wallet-authentication challenge → backend hashes original bytes and encrypts the file with a random per-file key → upload ciphertext to Pinata V3 → receive CID and original SHA-256 → browser confirms the original hash → register CID/hash/price/share on-chain → await the registration receipt and read its model ID → open Details.
+Open the [live website](https://montai-six.vercel.app) and check [backend health](https://montai-api.onrender.com/health). See the [contract on Sepolia Etherscan](https://sepolia.etherscan.io/address/0x50Af9D424C10D596ddb5f5cF9A18Fc193a73e97e) and [deployment receipt](https://sepolia.etherscan.io/tx/0x0008dfc1e032112a0fa6f988a7b35f1b1e198210abd89e33334cc9c43ba85fd7). These are the recorded public deployment values; availability and provider configuration can change.
 
-Supported extensions are ZIP, ONNX, PT, PKL, BIN and SAFETENSORS. Files are never loaded as code or executed by the server. Rejected registrations can leave orphan encrypted uploads; they are not automatically deleted because a submitted transaction may still confirm.
+## Quick start for visitors
 
-## Buyer flow
+1. Install MetaMask from [metamask.io](https://metamask.io), create a wallet privately and select Sepolia.
+2. Obtain free Sepolia ETH. Both creator and buyer need gas; the buyer also needs the model's price. Never use real funds for this demo.
+3. Open the website. Browse Marketplace without purchasing. Render Free cold starts can delay the first access-service request.
+4. **Creator:** choose Publish a Model, connect and sign the wallet challenge, select a supported file up to 25 MB, enter metadata, price and creator share, then confirm registration in MetaMask after encrypted upload.
+5. **Buyer:** switch to a separate funded wallet, open the model, choose License Model, confirm price plus gas, wait for mining, then Download licensed model and sign the authentication challenge when prompted.
+6. **Unlicensed tester:** switch to a third wallet and attempt the protected download. Authentication alone must not grant access; expect HTTP 403.
 
-Discover active blockchain models → open Details → sign in with MetaMask using a free challenge signature → purchase with the authenticated current signer and exact on-chain price → await the transaction receipt → verify the receipt buyer/contract and fresh hasLicense results on the wallet and configured RPC → show License Owned.
+A wallet signature authenticates an address; a transaction changes blockchain state and costs gas. Read the [complete beginner guide](docs/USER_GUIDE.md) before the demo.
 
-Wallet connection, wallet authentication, optional profile identity and on-chain roles are separate. Uploads, purchases, downloads, listing status changes and withdrawals require an unexpired wallet session matching the selected account/network. The client checks the backend session before protected actions; write guards recheck immediately before opening MetaMask. Connecting MetaMask or signing into Google/email alone does not grant access.
+## Architecture at a glance
 
-The backend recovers the signed wallet and independently checks its on-chain license (or creator ownership) before retrieving/decrypting the model. The browser hashes the delivered original bytes and blocks saving a mismatch. Account/network changes, disconnect, session expiry and application logout immediately clear role, access, pending-result and current-session evidence views. Tokens are memory-only: a browser reload requires a fresh free sign-in; switching accounts never carries the previous session forward. Logout also signs out the optional local Supabase profile and attempts server-side wallet-session revocation; offline revocation may fail, but the frontend still clears access immediately and the backend token expires after one hour.
+React/Vite on Vercel reads ModelChain through Alchemy and requests MetaMask signatures/transactions. Node/Express on Render encrypts uploads, checks on-chain download permissions, and decrypts authorized downloads. Solidity/Hardhat on Sepolia stores registration, pricing, licenses and revenue balances. Pinata/IPFS stores ciphertext; a private Supabase Storage bucket stores protected records containing wrapped file keys. Optional Supabase profiles are separate from wallet licensing.
 
-Optional profiles can link the authenticated public address using existing Supabase user metadata (`linked_wallet_address`). This is profile context, never proof of ownership or license rights. A linked-profile/account mismatch blocks protected actions and offers normal MetaMask account selection. The app never selects an account silently or asks for wallet credentials. Real Google/email flows and existing Supabase policies still require acceptance with the configured service.
+## Documentation
 
-## Payments and listing behavior
+| Read this | Purpose |
+| --- | --- |
+| [User guide](docs/USER_GUIDE.md) | Wallet setup, publishing, buying and downloading |
+| [Technical architecture](docs/TECHNICAL_ARCHITECTURE.md) | Components, API, sequences and trust boundaries |
+| [Deployment guide](docs/DEPLOYMENT_GUIDE.md) | Fresh clone, environment tables and free-tier hosting |
+| [Demo and testing](docs/DEMO_AND_TESTING_GUIDE.md) | Acceptance checklist and evidence |
+| [Troubleshooting](docs/TROUBLESHOOTING.md) | Provider, wallet, startup and configuration issues |
+| [Security notes](docs/SECURITY_NOTES.md) | Secrets, persistence, limitations and upgrades |
+| [Public testnet runbook](PUBLIC_TESTNET_RUNBOOK.md) | Operational release gates and persistence checks |
+| [Local runbook](LOCAL_RUNBOOK.md) | Isolated localhost development |
 
-The royalty field is the **creator share of each sale**, in whole percent. The remainder is credited to the platform, which is the deploying wallet. All received license proceeds are assigned to withdrawal balances. Withdrawals zero the balance before the external transfer and revert atomically if delivery fails.
+## Developer quick start
 
-For 0.05 ETH at 90%, creator credit is 0.045 ETH and platform credit is 0.005 ETH; an ordinary buyer receives zero. A buyer that is also the platform wallet legitimately receives platform fees. Dashboard queries `pendingWithdrawals(authenticatedWallet)` directly, so combined creator/platform credit is not mislabelled as buyer earnings. An isolated contract test verifies these amounts and the platform-as-buyer case without redeploying the live chain.
+Prerequisites: Node 22, npm, Git; MetaMask and funded Sepolia accounts for public acceptance. Hosted deployment also needs Alchemy, Pinata, Supabase, Render and Vercel accounts.
 
-Creators cannot purchase their own models; duplicate purchases, wrong payment, inactive sales and invalid model IDs are rejected. Creators retain download access. Deactivation prevents new sales but does not revoke existing licenses. Dashboard shows creator models, purchased licenses, and aggregate withdrawable revenue. Registrations are immutable; versions, resale royalties and legal usage rights are not separately modeled. RoyaltyPaid is a legacy event emitted when revenue is credited; RevenueWithdrawn records the actual payout.
-
-## Local setup
-
-Use the repository's supported Node 22 runtime and npm lockfiles. Full operational instructions are in [LOCAL_RUNBOOK.md](LOCAL_RUNBOOK.md).
-
-1. Install dependencies: run npm ci in the root, backend and frontend directories.
-2. Configure private environment files from their corresponding .env.example files. Keep the frontend/backend chain ID and contract address identical.
-3. For a **new local session**, start npm run node in the root, then npm run deploy:local in another terminal. Configure the printed contract address in the backend/frontend.
-4. Start npm start in backend and npm run dev in frontend. Use the frontend origin configured by CLIENT_ORIGIN.
-5. Connect disposable local MetaMask accounts. Register as creator, purchase as a different buyer, then download and verify.
-
-**When debugging an existing session, keep its node and deployment running.** Restarting the ephemeral chain removes registrations/licenses. Do not redeploy to fix wallet state. The read-only scripts/interact.ts utility requires explicit CONTRACT_ADDRESS and MODEL_ID and is restricted to local chain 31337.
-
-Without Pinata, development uses encrypted local storage with a local- identifier. Production requires Pinata. Live V3 encrypted upload → gateway retrieval → decryption has been verified separately using the existing credential; routine tests do not repeatedly upload fixtures.
-
-## Environment variable names
-
-| Component | Variables |
-|---|---|
-| Frontend chain/access | VITE_CHAIN_ID, VITE_CONTRACT_ADDRESS, VITE_RPC_URL, VITE_API_URL |
-| Optional profiles | VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY |
-| Backend chain | RPC_URL, CHAIN_ID, CONTRACT_ADDRESS |
-| Backend access/storage | CLIENT_ORIGIN, MODEL_MASTER_KEY, PINATA_JWT, IPFS_GATEWAY, DATA_DIR |
-| Backend process | HOST, PORT, NODE_ENV |
-| Sepolia deployment | SEPOLIA_RPC_URL, SEPOLIA_PRIVATE_KEY |
-| Deployment controls | MONTAI_DEPLOY_DRY_RUN, MONTAI_ALLOW_TESTNET_DEPLOYMENT |
-
-All VITE values are public browser configuration. Never place server secrets there. There is no SESSION_SECRET: sessions are random opaque tokens stored server-side in memory. Keep MODEL_MASTER_KEY and the protected storage records across backend restarts; losing either can lose model access.
-
-## Testing
-
-Run from the repository root:
-
-~~~sh
+```sh
+git clone https://github.com/krishnaverma2025-byte/ModelChain.git
+cd ModelChain
+npm ci
+npm ci --prefix backend
+npm ci --prefix frontend
 npm run compile
 npm test
-npx tsc --noEmit
 npm test --prefix backend
-npm run lint --prefix frontend
+npm test --prefix frontend
 npm run build --prefix frontend
-npm run test:e2e --prefix frontend
-npm run security:scan -- --history
-npm audit --audit-level=high
-npm audit --prefix backend --audit-level=high
-npm audit --prefix frontend --audit-level=high
-~~~
+```
 
-Install Chromium once from frontend with npx playwright install chromium. E2E uses a **separate** disposable local node/API/frontend on ports 18545/14000/15173 and does not touch the user's chain on 8545. Its wallet is an injected test provider; actual MetaMask prompts remain a manual acceptance step.
+These commands install and verify the project; they do not configure or deploy it. Follow the deployment guide for Sepolia or the local runbook for a local chain. Code lives in `contracts/`, `scripts/`, `backend/src/` and `frontend/src/`.
 
-Coverage includes creator restrictions, two independent buyers, unlicensed fourth-wallet denial, receipt/hasLicense checks, account changes during authentication, transaction/signature rejection, refresh recovery, backend signature ownership/replay/expiry, encrypted round-trips, tampered content, wrong network, invalid IDs, dashboard, failed payouts, withdrawal reentry and mobile layout. CI runs the local suite on feature pushes/PRs. A passing local run does not prove hosted CI or public-network operation.
+## Security and scope
 
-## Security model and limits
-
-Keys stay in protected backend records; no raw model or encryption key is sent to IPFS or chain. Signed challenges include wallet, nonce, expiry, origin, chain and contract. Sessions expire after one hour and are lost on API restart. Downloads are not cacheable. The API limits requests/uploads and binds stored CID/hash/creator to the on-chain record.
-
-Authorized buyers can copy decrypted files. Integrity verification proves byte equality, not model safety or accuracy. The API/key service and its protected persistent volume are trusted components. Use TLS and a single API replica unless a shared session store is implemented. Gateway downloads are size-bounded. The catalogue enumerates on-chain models and is intended for a small project; larger scale needs indexing/pagination.
-
-Current/history secret scanning checks known credential values and common patterns; it is not a guarantee against every possible secret format. Root development tooling retains low-severity transitive elliptic findings without an available upstream fix. Backend/frontend audits and all findings should be rechecked at release. This implementation has not received an independent production contract audit.
-
-## Sepolia preparation — no deployment yet
-
-Sepolia chain 11155111 uses environment-based RPC/deployer configuration. The deploying wallet becomes the platform payout recipient; confirm it before deployment. Never use Hardhat's development keys on public networks.
-
-After privately supplying configuration and test ETH, MONTAI_DEPLOY_DRY_RUN enables a preflight that reports chain, deployer and balance without sending a transaction. An actual Sepolia deployment additionally requires explicit user approval and the deployment control flag documented in the runbook. The script rejects unsupported chains and standard Hardhat accounts on Sepolia. After approval and deployment, propagate the emitted address to both frontend and backend and verify their health/configuration agreement. Hardhat verification tooling is already installed; explorer verification is a separate post-deployment check.
-
-Public testing still requires a funded dedicated deployer, Sepolia RPC, hosted HTTPS frontend/API, durable protected storage, real MetaMask acceptance, and optional production Supabase policies if profiles are enabled. No PR merge or public deployment is automatic.
-
-## Repository and review workflow
-
-Development is on feature branches. Main is reserved for reviewed stable work. PR #2 contains the original settlement/storage foundation; PR #3 includes that foundation plus the completed application and later hardening, including the Pinata V3 fix. PR #2 is therefore superseded as a standalone release candidate. Review its foundation first within PR #3, then merge PR #3 only after team approval; close #2 as superseded afterward. Alternatively, retain both review units by merging #2 then #3 with ordinary merge commits, without deploying the intermediate state. Neither PR has been merged by this agent.
-
-Generated bindings/build outputs and unrelated local instruction-file changes must not be accidentally bundled with feature commits.
-
-## License
-
-This repository is an academic/team project. Confirm the intended distribution license and model-specific usage terms before public distribution.
+Sepolia ETH has **no real monetary value**. This is a public academic test, not an audited production service. On-chain verification demonstrates provenance/integrity metadata and byte equality, **not model quality, safety, accuracy or legal ownership**. Wallet addresses are pseudonymous. Encryption controls initial delivery; authorized recipients can copy plaintext. Never commit secrets or place them in `VITE_*` variables. Confirm project distribution licensing and model-specific usage terms before distribution.
