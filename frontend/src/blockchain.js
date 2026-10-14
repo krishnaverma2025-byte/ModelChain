@@ -8,6 +8,7 @@ import {
 } from "ethers";
 import { walletSession } from "./walletSession.mjs";
 import { accessFetch } from './access-service.mjs';
+import { apiReads, apiError, chainReads } from './read-pool.mjs';
 const production = import.meta.env.PROD;
 export const config = {
   rpc:
@@ -29,7 +30,11 @@ export const ABI = [
   "function setModelActive(uint256,bool)",
   ...EVENT_ABI,
 ];
-export async function readContract() {
+let readerProvider;
+export function readContract() {
+  return chainReads('contract',validateReader);
+}
+async function validateReader() {
   if (!config.rpc || ![31337n,11155111n].includes(config.chainId))
     throw new Error(
       "Configure VITE_RPC_URL and VITE_CHAIN_ID for this deployment.",
@@ -44,7 +49,7 @@ export async function readContract() {
     throw new Error(
       "Set VITE_CONTRACT_ADDRESS to your deployed ModelChain address.",
     );
-  const provider = new JsonRpcProvider(config.rpc, undefined, {
+  const provider = readerProvider ||= new JsonRpcProvider(config.rpc, undefined, {
     cacheTimeout: -1,
   });
   if ((await provider.getNetwork()).chainId !== config.chainId)
@@ -197,10 +202,14 @@ export async function api(path, options = {}) {
     new URL(config.api).protocol !== "https:"
   )
     throw new Error("Public model access API must use HTTPS.");
-  const response = await accessFetch(config.api + path, options, fetch, pending => window.dispatchEvent(new CustomEvent('montai-access-service',{detail:pending})));
+  const load = signal => accessFetch(config.api + path, {...options,signal}, fetch, pending => window.dispatchEvent(new CustomEvent('montai-access-service',{detail:pending})));
+  const readOnly = (!options.method || options.method === 'GET') && (path === '/health' || path === '/api/auth/session' || /^\/api\/models\/\d+\/metadata$/.test(path));
+  const response = readOnly
+    ? (await apiReads(`${config.api}${path}:${options.headers?.Authorization || ''}`,load,options.signal)).clone()
+    : await load(options.signal);
   if (!response.ok) {
     if (response.status === 429)
-      throw new Error("Too many requests. Wait a moment before retrying.");
+      throw new Error(apiError(429));
     let data;
     try {
       data = await response.json();
@@ -275,10 +284,11 @@ export async function authenticate(signer) {
     expiresAt: session.expiresAt,
   };
 }
-export async function metadata(id) {
+export async function metadata(id, options = {}) {
   try {
-    return await (await api(`/api/models/${id}/metadata`)).json();
-  } catch {
+    return await (await api(`/api/models/${id}/metadata`,options)).json();
+  } catch(error) {
+    if(error.name==='AbortError' || /Too many requests/.test(error.message)) throw error;
     return {
       category: "AI Model",
       description:
@@ -297,6 +307,8 @@ export const short = (value) =>
 export const errorText = (error) =>
   error.code === "ACTION_REJECTED" || error.code === 4001
     ? "Request rejected in MetaMask. Nothing was confirmed."
+    : ['NETWORK_ERROR','SERVER_ERROR','TIMEOUT','UNKNOWN_ERROR','BAD_DATA','OFFCHAIN_FAULT'].includes(error.code) || (Number.isInteger(error.code) && error.code < 0)
+      ? 'The wallet or network service is unavailable. Check the transaction status before trying again.'
     : error instanceof TypeError
       ? "MontAI authentication service is unavailable."
       : error.reason || error.shortMessage || error.message;

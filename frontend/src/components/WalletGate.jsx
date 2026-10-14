@@ -3,6 +3,7 @@ import useIdentity from "../useIdentity";
 import { signInWallet, switchWallet, switchNetwork } from "../identity";
 import { config, errorText } from "../blockchain";
 import { CopyValue, NetworkBadge, TestnetHelp } from "./UI";
+import MobileWalletHandoff from './MobileWalletHandoff';
 export default function WalletGate({ action = "continue" }) {
   const state = useIdentity();
   const [busy, setBusy] = useState(false),
@@ -59,9 +60,9 @@ export default function WalletGate({ action = "continue" }) {
           <button
             className="primary-button"
             onClick={() => run(signInWallet)}
-            disabled={busy}
+            disabled={busy || state.restoring}
           >
-            {busy
+            {state.restoring ? 'Verifying wallet session…' : busy
               ? state.status || "Authenticating wallet…"
               : "Sign in with MetaMask"}
           </button>
@@ -71,6 +72,7 @@ export default function WalletGate({ action = "continue" }) {
         <p role={error ? "alert" : "status"}>{error || state.status}</p>
       )}
       <TestnetHelp />
+      <MobileWalletHandoff />
     </section>
   );
 }

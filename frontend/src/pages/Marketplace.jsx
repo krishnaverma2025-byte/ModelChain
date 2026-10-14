@@ -21,10 +21,11 @@ export default function Marketplace() {
     [revision, setRevision] = useState(0);
   useEffect(() => {
     let active = true;
+    const controller=new AbortController();
     async function load() {
       setLoading(true);
       try {
-        const items = await loadCatalog();
+        const items = await loadCatalog({signal:controller.signal});
         if (active) {
           setModels(items);
           setError("");
@@ -38,6 +39,7 @@ export default function Marketplace() {
     load();
     return () => {
       active = false;
+      controller.abort();
     };
   }, [revision]);
   const visible = models.filter(

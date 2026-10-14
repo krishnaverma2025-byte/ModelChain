@@ -9,6 +9,7 @@ import {
   logout,
 } from "../identity";
 import { CopyValue, NetworkBadge, Badge, TestnetHelp } from "./UI";
+import MobileWalletHandoff from './MobileWalletHandoff';
 export default function WalletStatus() {
   const state = useIdentity(),
     ref = useRef(null);
@@ -87,6 +88,7 @@ export default function WalletStatus() {
         </Link>
       )}
       {error && <small role="alert">{error}</small>}
+      {!state.authenticated && <MobileWalletHandoff compact />}
     </div>
   );
 }

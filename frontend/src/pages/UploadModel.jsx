@@ -12,6 +12,7 @@ import {
 } from "../blockchain";
 import useIdentity from "../useIdentity";
 import WalletGate from "../components/WalletGate";
+import { rollbackUpload } from '../upload-rollback.mjs';
 
 function UploadModel() {
   const identity = useIdentity();
@@ -19,6 +20,7 @@ function UploadModel() {
   const selection = useRef(0);
   const operation = useRef(false);
   const registration = useRef(null);
+  const uncertain = useRef(false);
   const [fileHash, setFileHash] = useState(""),
     [hashPending, setHashPending] = useState(false),
     [stored, setStored] = useState(null),
@@ -63,6 +65,10 @@ function UploadModel() {
   const handleRegister = async (e) => {
     e.preventDefault();
     if (operation.current || loading || hashPending) return;
+    if(uncertain.current) {
+      setError('The previous registration has an unknown broadcast outcome. Check the wallet transaction history before starting another registration. Its upload was not deleted.');
+      return;
+    }
     setError("");
     setMessage("");
     if (
@@ -88,9 +94,11 @@ function UploadModel() {
     }
     operation.current = true;
     setLoading(true);
+    let pendingUpload, uploadHeaders, transaction = registration.current, receipt, sendStarted=false;
     try {
       setStage("authentication");
       const { address, contract, headers } = await wallet();
+      uploadHeaders=headers;
       setSignerAddress(address);
       setMessage("Wallet authenticated. Preparing encrypted storage…");
       const form = new FormData();
@@ -117,6 +125,7 @@ function UploadModel() {
           : await (
               await api("/api/uploads", { method: "POST", headers, body: form })
             ).json();
+      pendingUpload=uploaded;
       if (uploaded.modelHash !== (await hashFile(modelFile)))
         throw new Error("Upload integrity mismatch.");
       setStored({ ...uploaded, uploadKey });
@@ -127,6 +136,7 @@ function UploadModel() {
           ? "Development storage: encrypted local bytes. Confirm registration in MetaMask."
           : "Encrypted IPFS upload complete. Confirm registration in MetaMask.",
       );
+      sendStarted=true;
       const tx =
         registration.current ||
         (await contract.registerModel(
@@ -137,8 +147,9 @@ function UploadModel() {
           Number(royalty),
         ));
       registration.current = tx;
+      transaction=tx;
       setMessage("Transaction submitted. Waiting for confirmation…");
-      const receipt = await tx.wait();
+      receipt = await tx.wait();
       if (receipt.status !== 1) {
         registration.current = null;
         throw new Error("Registration transaction failed.");
@@ -164,8 +175,15 @@ function UploadModel() {
         },
       });
     } catch (err) {
+      const rollback = await rollbackUpload({cid:pendingUpload?.cid,transaction,receipt,error:err,sendStarted},cid=>api(`/api/uploads/${encodeURIComponent(cid)}`,{method:'DELETE',headers:uploadHeaders}));
+      // Even a failed compensation may already have unpinned ciphertext. Never
+      // reuse that CID for a later registration; an explicit retry uploads anew.
+      if(rollback.attempted) {setStored(null);registration.current=null;}
+      if(pendingUpload && !rollback.attempted && !transaction && !receipt) uncertain.current=true;
+      // A mined failure must never be reused as a pending registration on retry.
+      if(receipt?.status===0 || err.receipt?.status===0) registration.current=null;
       setStage("failed");
-      setError(errorText(err));
+      setError([errorText(err),rollback.message, !rollback.attempted && pendingUpload ? 'Upload retained because registration may be pending or confirmed. Check its transaction before starting another registration.' : ''].filter(Boolean).join(' '));
     } finally {
       operation.current = false;
       setLoading(false);

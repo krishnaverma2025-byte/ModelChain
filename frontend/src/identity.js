@@ -1,4 +1,4 @@
-import { walletSession } from "./walletSession.mjs";
+import { walletSession, restoreWalletSession } from "./walletSession.mjs";
 import {
   connectWallet,
   authenticate,
@@ -31,24 +31,46 @@ export function initializeIdentity() {
       if (!disposed && request === revision) walletSession.connection("", "");
     }
   };
-  const changed = () => {
-    disconnectWallet(false);
-    refresh();
+  const transition = (accounts, chain) => {
+    const before = walletSession.snapshot();
+    walletSession.connection(accounts, chain);
+    if (before.revision !== walletSession.snapshot().revision) {
+      if(before.connected && before.chain) {
+        loginCancellation++;
+        walletSession.status(before.connected.toLowerCase()!==walletSession.snapshot().connected.toLowerCase() ? 'Wallet changed during this request. Sign in again.' : 'Network changed. Sign in again.');
+      }
+      if (before.headers) api('/api/auth/session',{method:'DELETE',headers:before.headers}).catch(()=>{});
+    }
   };
-  ethereum?.on("accountsChanged", changed);
-  ethereum?.on("chainChanged", changed);
-  ethereum?.on("disconnect", changed);
-  refresh();
+  const accountsChanged = accounts => { revision++; transition(accounts?.[0] || '',walletSession.snapshot().chain); };
+  const chainChanged = chain => {
+    revision++;
+    try { transition(walletSession.snapshot().connected,String(BigInt(chain))); }
+    catch { disconnectWallet(); walletSession.connection('',''); }
+  };
+  const disconnected = () => { revision++; disconnectWallet(); walletSession.connection('',''); };
+  ethereum?.on("accountsChanged", accountsChanged);
+  ethereum?.on("chainChanged", chainChanged);
+  ethereum?.on("disconnect", disconnected);
   let profileRevision = 0;
   const applyProfile = (user) => {
     profileRevision++;
     walletSession.profile(user);
   };
   const initialProfile = profileRevision;
-  supabase?.auth.getSession().then(({ data }) => {
+  const profileReady = supabase?.auth.getSession().then(({ data }) => {
     if (!disposed && initialProfile === profileRevision)
       applyProfile(data.session?.user || null);
   });
+  Promise.resolve(profileReady).then(async () => {
+    if (disposed) return;
+    await restoreWalletSession({store:walletSession,ethereum,chainId:config.chainId,active:()=>!disposed,verify:async headers=>{
+      const server=await (await api('/api/auth/session',{headers})).json();
+      if (String(server.chainId)!==String(config.chainId) || server.contractAddress?.toLowerCase()!==config.address.toLowerCase()) throw new Error('Session deployment mismatch');
+      return server;
+    }});
+    if (!disposed) await refresh();
+  }).catch(()=>{if(!disposed) {walletSession.invalidate('Could not verify wallet session. Sign in again.');walletSession.restoring(false);}});
   const subscription = supabase?.auth.onAuthStateChange((_event, session) => {
     if (!disposed) applyProfile(session?.user || null);
   }).data.subscription;
@@ -61,9 +83,9 @@ export function initializeIdentity() {
     disposed = true;
     clearInterval(timer);
     subscription?.unsubscribe();
-    ethereum?.removeListener("accountsChanged", changed);
-    ethereum?.removeListener("chainChanged", changed);
-    ethereum?.removeListener("disconnect", changed);
+    ethereum?.removeListener("accountsChanged", accountsChanged);
+    ethereum?.removeListener("chainChanged", chainChanged);
+    ethereum?.removeListener("disconnect", disconnected);
   };
 }
 export async function signInWallet() {

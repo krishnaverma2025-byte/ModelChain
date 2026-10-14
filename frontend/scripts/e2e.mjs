@@ -138,10 +138,13 @@ try {
   let authRequests = 0;
   let transactionRequests = 0;
   let uploadRequests = 0;
+  let cleanupRequests = 0, lastUpload;
   page.on("request", (request) => {
     if (request.url() === api + "/api/uploads" && request.method() === "POST")
       uploadRequests++;
+    if(request.method()==='DELETE' && request.url().startsWith(api+'/api/uploads/')) cleanupRequests++;
   });
+  page.on('response',async response=>{if(response.url()===api+'/api/uploads' && response.status()===201) lastUpload=await response.json();});
   await page.exposeFunction("walletRpc", async ({ method, params = [] }) => {
     if (method === "eth_sendTransaction") transactionRequests++;
     if (
@@ -182,9 +185,16 @@ try {
       params[0].data?.startsWith("0xc8a028a8")
     )
       purchases.push(params[0].from.toLowerCase());
-    return provider.send(method, params);
+    const result=await provider.send(method, params);
+    if(method==='eth_sendTransaction') await page.evaluate(value=>{
+      window.emitWalletEvent('accountsChanged',[value]);
+      window.emitWalletEvent('chainChanged','0x7a69');
+    },account);
+    return result;
   });
   async function signIn() {
+    await page.waitForFunction(async()=>!(await import('/src/walletSession.mjs')).walletSession.snapshot().restoring);
+    if(await page.locator('.wallet-status').getByRole('button',{name:/●/}).count()) return;
     await page
       .getByRole("button", { name: "Sign in with MetaMask", exact: true })
       .click();
@@ -203,9 +213,8 @@ try {
   }
   async function respectApiBudget(minimum = 30) {
     const response = await fetch(api + "/api/models/1/metadata");
-    if (Number(response.headers.get("x-ratelimit-remaining")) < minimum) {
-      const reset = Number(response.headers.get("x-ratelimit-reset")) * 1000;
-      await page.waitForTimeout(Math.max(0, reset - Date.now()) + 1000);
+    if (response.status===429) {
+      await page.waitForTimeout(Number(response.headers.get('retry-after') || minimum)*1000+100);
     }
   }
   await page.addInitScript(() => {
@@ -283,6 +292,15 @@ try {
     .first()
     .waitFor();
   assert.equal(uploadRequests, 1);
+  assert.equal(cleanupRequests,1,'Rejected pre-broadcast registration must compensate its upload exactly once');
+  assert.equal((await fetch(`${api}/api/models/1/metadata`)).status,404);
+  await assert.rejects(readFile(resolve(temporary,`31337-${address.toLowerCase()}`,lastUpload.cid+'.json')),{code:'ENOENT'});
+  await page.route(api+'/api/uploads/*',route=>route.request().method()==='DELETE'?route.fulfill({status:503,contentType:'application/json',body:'{"error":"Cleanup unavailable"}'}):route.continue());
+  await page.getByRole('button',{name:'Register Model',exact:true}).click();
+  await page.getByText(/Upload cleanup could not be completed/).waitFor();
+  assert.equal(cleanupRequests,2,'Cleanup failure must not cause automatic deletion retries');
+  const failedCleanupCid=lastUpload.cid;
+  await page.unroute(api+'/api/uploads/*');
   rejectMethod = "";
   await page
     .getByRole("button", { name: "Register Model", exact: true })
@@ -300,9 +318,11 @@ try {
   assert.equal(await contract.getModelCount(), 1n);
   assert.equal(
     uploadRequests,
-    1,
-    "Registration retry duplicated encrypted upload",
+    3,
+    "Registration retry must replace the compensated encrypted upload",
   );
+  assert.notEqual((await contract.getModel(1)).cid,failedCleanupCid,'Never register a CID after a possibly partial cleanup');
+  assert.equal(cleanupRequests,2,'Successful registration must not request cleanup');
   // Logout clears role/access/session evidence but preserves public creator facts.
   await page
     .locator(".wallet-status")
@@ -391,12 +411,23 @@ try {
     .getByRole("button", { name: /License Owned/ })
     .waitFor({ timeout: 30000 });
   assert.equal(await contract.hasLicense(1, account), true);
+  const signaturesBeforeReload=authRequests;
   await page.reload();
-  await page
-    .getByText("Sign in to check license status.", { exact: true })
-    .waitFor();
-  await signIn();
   await page.getByRole("button", { name: /License Owned/ }).waitFor();
+  assert.equal(authRequests,signaturesBeforeReload,'Valid reload unnecessarily requested a signature');
+  assert.equal(await page.locator('.wallet-status').getByRole('button',{name:/●/}).count(),1);
+  await page.evaluate(value=>{window.emitWalletEvent('accountsChanged',[value]);window.emitWalletEvent('chainChanged','0x7a69');},account);
+  assert.equal(await page.locator('.wallet-status').getByRole('button',{name:/●/}).count(),1);
+  await page.route(api+'/api/auth/session',route=>route.request().method()==='GET'?route.fulfill({status:401,contentType:'application/json',body:'{"error":"expired"}'}):route.continue());
+  await page.reload();
+  await page.getByText('Sign in to check license status.',{exact:true}).waitFor();
+  await page.waitForFunction(()=>!sessionStorage.getItem('montai.wallet-session.v1'));
+  await page.unroute(api+'/api/auth/session');
+  await signIn();
+  await page.evaluate(()=>window.emitWalletEvent('disconnect',{code:4900}));
+  await page.getByText('Sign in to check license status.',{exact:true}).waitFor();
+  assert.equal(await page.evaluate(()=>sessionStorage.getItem('montai.wallet-session.v1')),null);
+  await signIn();
   const downloadPromise = page.waitForEvent("download");
   await page.getByRole("button", { name: "Download licensed model" }).click();
   const download = await downloadPromise;
@@ -689,9 +720,10 @@ try {
   await page.goto(origin + "/dashboard");
   await signIn();
   await page.getByRole("link", { name: "Access & verify →" }).waitFor();
+  wrongNetwork=true;
   await page.evaluate(() => window.emitWalletEvent("chainChanged", "0x1"));
   await page
-    .getByRole("button", { name: "Sign in with MetaMask", exact: true })
+    .getByRole("button", { name: "Switch network", exact: true })
     .last()
     .waitFor();
   await page.goto(origin + "/marketplace");
@@ -716,6 +748,7 @@ try {
     ),
     "Mobile navbar overlaps the page",
   );
+  wrongNetwork=false;
   account = await creator.getAddress();
   await page.goto(origin + "/dashboard");
   await signIn();
@@ -766,6 +799,21 @@ try {
   await page.goto(origin + "/login");
   await page.getByRole("heading", { name: "Sign in to MontAI" }).waitFor();
   assert.deepEqual(errors, []);
+  const mobileContext=await browser.newContext({userAgent:'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) Mobile',isMobile:true,viewport:{width:390,height:844}});
+  const mobile=await mobileContext.newPage();
+  await mobile.goto(origin+'/login');
+  const handoff=mobile.locator('.auth-prerequisite').getByRole('link',{name:'Open MontAI in MetaMask',exact:true});
+  await handoff.waitFor();
+  assert.equal(await handoff.getAttribute('href'),'https://metamask.app.link/dapp/montai-six.vercel.app/');
+  assert.equal(mobile.url(),origin+'/login','Mobile wallet handoff must not redirect automatically');
+  assert.ok(await mobile.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth),'Mobile handoff must not overflow');
+  assert.ok(await mobile.evaluate(()=>document.querySelector('.auth-page').getBoundingClientRect().top>=document.querySelector('.navbar').getBoundingClientRect().bottom),'Mobile handoff navbar must not overlap content');
+  await mobile.screenshot({path:resolve(temporary,'mobile-metamask-handoff.png'),fullPage:true});
+  await mobile.addInitScript(()=>{window.ethereum={request:async({method})=>method==='eth_accounts'?[]:'0x7a69',on:()=>{},removeListener:()=>{}};});
+  await mobile.reload();
+  await mobile.getByRole('heading',{name:'Sign in to MontAI',exact:true}).waitFor();
+  assert.equal(await mobile.getByRole('link',{name:'Open MontAI in MetaMask',exact:true}).count(),0);
+  await mobileContext.close();
   // A read outage must be explicit, recoverable and never look like empty history.
   await page.route(rpc, (route) => route.abort());
   await page.goto(origin + "/activity");
@@ -783,7 +831,7 @@ try {
     "MontAI integration generated suspicious contract calls",
   );
   console.log(
-    "PASS: provenance events, drawer, session evidence and desktop/tablet/mobile routes; creator restrictions; Account 2 and 3 purchases and verified downloads; Account 4 denial; account/signature switching; rejected transaction/signature; refresh; dashboard; withdrawal; deactivation; tamper detection; wrong network; no wallet; invalid ID.",
+    "PASS: reload restoration/backend rejection/disconnect; duplicate wallet events during all transaction types; rejected-upload compensation; mobile handoff without redirects; provenance and desktop/tablet/mobile routes; purchases and verified downloads; unlicensed denial; account/signature switching; dashboard; withdrawal; deactivation; tamper detection; wrong network; no wallet; invalid ID.",
   );
   console.log(`Screenshots and isolated encrypted test data: ${temporary}`);
   await provider.destroy();
