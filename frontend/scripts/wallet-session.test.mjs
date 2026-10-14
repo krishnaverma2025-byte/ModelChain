@@ -1,8 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createWalletSession } from "../src/walletSession.mjs";
-const A = "0xaaaa",
-  B = "0xbbbb";
+const A = "0x"+'a'.repeat(40),
+  B = "0x"+'b'.repeat(40);
 function signedIn(store, address = A) {
   store.connection(address, "31337");
   store.authenticated(

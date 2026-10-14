@@ -1,5 +1,5 @@
 import { createCipheriv, createDecipheriv, createHash, randomBytes } from 'node:crypto';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile, unlink } from 'node:fs/promises';
 import path from 'node:path';
 import { validateCid, validateRecord } from './record-store.js';
 
@@ -21,6 +21,15 @@ export function createStorage({directory, masterKey, pinataJwt, gateway = 'https
   const key = Buffer.from(masterKey,'hex');
   const safeCid = validateCid;
   const recordPath = cid => path.join(directory, safeCid(cid)+'.json');
+  const unpin = async id => {
+    let response;
+    try { response=await fetchImpl(`https://api.pinata.cloud/v3/files/public/${id}`,{method:'DELETE',headers:{Authorization:`Bearer ${pinataJwt}`},signal:AbortSignal.timeout(30000),redirect:'error'}); }
+    catch { throw new Error('Encrypted upload cleanup unavailable'); }
+    if(!response.ok && response.status!==404) throw new Error('Encrypted upload cleanup failed; manual review required');
+  };
+  const removeCache = async cid => {
+    try { await unlink(path.join(directory,safeCid(cid)+'.enc')); } catch(error) { if(error.code!=='ENOENT') throw error; }
+  };
   return {
     async save(bytes, metadata, owner) {
       if(recordStore) { try { await mkdir(directory,{recursive:true,mode:0o700}); } catch {} }
@@ -28,6 +37,7 @@ export function createStorage({directory, masterKey, pinataJwt, gateway = 'https
       const fileKey = randomBytes(32);
       const ciphertext = seal(bytes,fileKey);
       let cid = 'local-'+digest(ciphertext);
+      let pinataFileId;
       if (pinataJwt) {
         const form = new FormData();
         // Public IPFS carries authenticated ciphertext only, never model bytes or keys.
@@ -35,13 +45,22 @@ export function createStorage({directory, masterKey, pinataJwt, gateway = 'https
         form.append('file',new Blob([ciphertext]),'model.enc');
         const response = await fetchImpl('https://uploads.pinata.cloud/v3/files',{method:'POST',headers:{Authorization:`Bearer ${pinataJwt}`},body:form,signal:AbortSignal.timeout(60000)});
         if (!response.ok) throw new Error(`IPFS pinning failed (HTTP ${response.status})`);
-        cid = safeCid((await response.json()).data?.cid);
+        const data = (await response.json()).data;
+        cid = safeCid(data?.cid);
+        pinataFileId = data?.id;
+        if (!/^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$/.test(pinataFileId || '')) throw new Error('Storage returned no valid cleanup identifier');
       }
-      const record = {...metadata, cid, modelHash:digest(bytes), encryptedHash:digest(ciphertext), owner:owner.toLowerCase(), wrappedKey:seal(fileKey,key).toString('base64')};
+      const record = {...metadata, cid, modelHash:digest(bytes), encryptedHash:digest(ciphertext), owner:owner.toLowerCase(), wrappedKey:seal(fileKey,key).toString('base64'), ...(pinataFileId ? {pinataFileId} : {})};
       validateRecord(record,cid);
       if (recordStore) {
         // A CID is returned only after its wrapped key is durably protected remotely.
-        await recordStore.save(record);
+        try { await recordStore.save(record); }
+        catch(error) {
+          // No CID has been returned to a registrant yet. One best-effort
+          // compensation, not a background retry loop; preserve remote records.
+          if(pinataFileId) try { await unpin(pinataFileId); } catch { console.warn('[UPLOAD CLEANUP] persistence failed; manual Pinata review required'); }
+          throw error;
+        }
         // Ephemeral cache is optional, never authoritative in this mode.
         try { await writeFile(path.join(directory,cid+'.enc'),ciphertext,{mode:0o600,flag:'wx'}); } catch {}
       } else {
@@ -51,6 +70,18 @@ export function createStorage({directory, masterKey, pinataJwt, gateway = 'https
       return {cid,modelHash:record.modelHash,storage:pinataJwt?'ipfs':'local'};
     },
     async record(cid) { return recordStore ? recordStore.record(safeCid(cid)) : validateRecord(JSON.parse(await readFile(recordPath(cid),'utf8')),cid); },
+    async remove(record) {
+      validateRecord(record,record.cid);
+      if(!record.cid.startsWith('local-')) {
+        // Older protected records still download normally, but must never be
+        // guessed/unpinned by CID without their server-side file identifier.
+        if(!record.pinataFileId || !pinataJwt) throw Object.assign(new Error('Legacy upload cleanup requires manual review'),{status:409});
+        await unpin(record.pinataFileId);
+      }
+      if(recordStore) await recordStore.remove(record.cid);
+      await removeCache(record.cid);
+      if(!recordStore) await unlink(recordPath(record.cid));
+    },
     async decrypt(record) {
       validateRecord(record,record.cid);
       let ciphertext;

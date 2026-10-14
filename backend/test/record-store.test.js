@@ -23,6 +23,12 @@ function remote() {
       assert.equal(options.redirect,'error');
       if(fail) return new Response('private remote failure detail',{status:503});
       if(url.endsWith(`/bucket/${bucket}`)) return Response.json({id:bucket,public:publicBucket});
+      if(options.method==='DELETE') {
+        const {prefixes}=JSON.parse(options.body);
+        assert.equal(prefixes.length,1);assert.ok(prefixes[0].startsWith(`11155111/${contractAddress}/`));
+        records.delete(`${base.url}/storage/v1/object/${bucket}/${prefixes[0]}`);
+        return Response.json([]);
+      }
       const key=url.replace('/authenticated','');
       if(options.method==='POST') {
         assert.equal(options.headers['x-upsert'],'false');
@@ -33,7 +39,7 @@ function remote() {
     }
     if(url==='https://uploads.pinata.cloud/v3/files') {
       ciphertext=Buffer.from(await options.body.get('file').arrayBuffer());
-      return Response.json({data:{cid}});
+      return Response.json({data:{cid,id:'00000000-0000-0000-0000-000000000001'}});
     }
     assert.equal(url,`https://gateway.pinata.cloud/ipfs/${cid}`);
     return new Response(ciphertext);
@@ -67,6 +73,17 @@ test('production records persist remotely across an empty filesystem; IPFS ciphe
   fixture.tamper();await assert.rejects(()=>restarted.decrypt(record),/Ciphertext integrity/);
   fixture.setFailure();await assert.rejects(()=>restarted.record(cid),/HTTP 503/);
   await assert.rejects(()=>restarted.save(bytes,{fileName:'fixture.onnx'},contractAddress),/HTTP 503/);
+});
+test('private record removal targets only the chain/contract/CID namespace',async()=>{
+  const fixture=remote(),store=createRecordStore({...base,fetchImpl:fixture.fetchImpl});
+  await store.save({cid,modelHash:'a'.repeat(64),encryptedHash:'b'.repeat(64),owner:contractAddress,wrappedKey:Buffer.alloc(60).toString('base64')});
+  const untouched=`${base.url}/storage/v1/object/${bucket}/31337/${contractAddress}/other.json`;
+  fixture.records.set(untouched,{fixture:true});
+  await store.remove(cid);
+  assert.equal(fixture.records.size,1);assert.ok(fixture.records.has(untouched));
+  assert.equal(fixture.requests.at(-1).options.method,'DELETE');
+  await assert.rejects(()=>store.remove('../other'),/Invalid CID/);
+  fixture.setPublic();await assert.rejects(()=>store.remove(cid),/PRIVATE/);
 });
 test('private bucket, no fallback, bounded records and namespace validation fail closed',async()=>{
   const fixture=remote(), store=createRecordStore({...base,fetchImpl:fixture.fetchImpl});

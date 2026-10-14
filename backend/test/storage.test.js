@@ -18,7 +18,7 @@ test('IPFS receives ciphertext only; wrapped keys survive restart; tampering fai
      assert.equal(options.body.get('file').name,'model.enc');
      pinned=Buffer.from(await options.body.get('file').arrayBuffer());
      assert.equal(pinned.includes(bytes),false);
-     return Response.json({data:{cid}});
+     return Response.json({data:{cid,id:'00000000-0000-0000-0000-000000000001'}});
    }
    return new Response(pinned);
  };

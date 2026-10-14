@@ -16,6 +16,7 @@ import WalletGate from "../components/WalletGate";
 export default function Dashboard() {
   const identity = useIdentity();
   const revision = useRef(0);
+  const loadController = useRef(null);
   const [address, setAddress] = useState(""),
     [models, setModels] = useState([]),
     [licenses, setLicenses] = useState([]),
@@ -25,6 +26,9 @@ export default function Dashboard() {
     ),
     [busy, setBusy] = useState(false);
   async function load(account) {
+    loadController.current?.abort();
+    const controller=new AbortController();
+    loadController.current=controller;
     const request = ++revision.current;
     setBusy(true);
     try {
@@ -33,6 +37,7 @@ export default function Dashboard() {
       const mine = [],
         owned = [];
       for (let id = 1n; id <= count; id++) {
+        controller.signal.throwIfAborted();
         const m = await c.getModel(id);
         const entry = {
           id: m.id.toString(),
@@ -42,7 +47,7 @@ export default function Dashboard() {
           royalty: m.royalty.toString(),
           active: m.active,
           cid: m.cid,
-          ...(await metadata(id)),
+          ...(await metadata(id,{signal:controller.signal})),
         };
         if (m.owner.toLowerCase() === account.toLowerCase()) mine.push(entry);
         if (await c.hasLicense(id, account)) owned.push(entry);
@@ -81,6 +86,7 @@ export default function Dashboard() {
     changed(identity.authenticated ? [identity.authenticated] : []);
     return () => {
       disposed = true;
+      loadController.current?.abort();
       requests.current++;
     };
   }, [identity.authenticated]);

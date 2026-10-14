@@ -8,6 +8,7 @@ export function validateRecord(record, cid) {
       !/^[a-f0-9]{64}$/.test(record.modelHash || '') ||
       !/^[a-f0-9]{64}$/.test(record.encryptedHash || '') ||
       typeof record.owner !== 'string' || !record.owner ||
+      (record.pinataFileId !== undefined && !/^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$/.test(record.pinataFileId)) ||
       !/^[A-Za-z0-9+/]{80}$/.test(record.wrappedKey || '') ||
       ['name','description','category','fileName'].some(field => record[field] !== undefined && typeof record[field] !== 'string') ||
       Buffer.byteLength(JSON.stringify(record)) > LIMIT) throw new Error('Invalid protected record');
@@ -43,6 +44,11 @@ export function createRecordStore({url, serviceRoleKey, bucket, chainId, contrac
   }
   return {
     verifyPrivate,
+    async remove(cid) {
+      const fileKey = `${chainId}/${contractAddress.toLowerCase()}/${validateCid(cid)}.json`;
+      await verifyPrivate();
+      await request(`object/${bucket}`, {method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({prefixes:[fileKey]})});
+    },
     async save(record) {
       validateRecord(record, record.cid);
       await verifyPrivate();

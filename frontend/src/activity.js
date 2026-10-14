@@ -1,4 +1,5 @@
 import { formatEther } from "ethers";
+import { chainReads } from './read-pool.mjs';
 
 export const EVENT_ABI = [
   "event ModelRegistered(uint256 indexed modelId,address indexed owner,string name,string cid,uint256 price)",
@@ -42,7 +43,11 @@ export function describeEvent(log) {
   };
 }
 // Bounded pages avoid unbounded RPC requests. Errors are shown, never disguised as empty history.
-export async function readEventPage(
+export function readEventPage(contract, options = {}) {
+  const {signal,...range}=options;
+  return chainReads(`events:${contract.target || ''}:${JSON.stringify(range)}`,()=>queryEventPage(contract,range),signal);
+}
+async function queryEventPage(
   contract,
   { toBlock, modelId, span = 2000, fromBlock = 0 } = {},
 ) {

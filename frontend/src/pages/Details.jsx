@@ -37,28 +37,8 @@ function Details() {
   const [success, setSuccess] = useState("");
   useEffect(() => {
     const requests = revision;
-    const changed = () => {
-      requests.current++;
-      setLicensed(false);
-      setLicenseKnown(false);
-      setOwner(false);
-      setPurchasing(false);
-      setSuccess("");
-      setError("");
-      setWalletRevision((n) => n + 1);
-    };
-    window.ethereum?.on("accountsChanged", changed);
-    window.ethereum?.on("chainChanged", changed);
-    return () => {
-      requests.current++;
-      window.ethereum?.removeListener("accountsChanged", changed);
-      window.ethereum?.removeListener("chainChanged", changed);
-    };
-  }, []);
-
-  useEffect(() => {
-    const requests = revision;
     let cancelled = false;
+    const controller = new AbortController();
 
     async function loadModel() {
       setLoading(true);
@@ -85,7 +65,7 @@ function Details() {
 
         if (cancelled) return;
 
-        const extra = await metadata(blockchainId);
+        const extra = await metadata(blockchainId,{signal:controller.signal});
         if (cancelled) return;
         setModel({
           id: data.id.toString(),
@@ -124,18 +104,15 @@ function Details() {
               }
             }
           } catch (licenseError) {
-            console.log("Could not check existing license:", licenseError);
+            if(!cancelled) setError(errorText(licenseError));
           }
         }
       } catch (err) {
-        console.error("Failed to load model:", err);
-
         if (!cancelled) {
           setModel(null);
 
           setError(
-            err?.shortMessage ||
-              err?.message ||
+            errorText(err) ||
               "Could not load this model. Make sure the Hardhat node is running.",
           );
         }
@@ -150,6 +127,7 @@ function Details() {
 
     return () => {
       cancelled = true;
+      controller.abort();
       requests.current++;
     };
   }, [id, walletRevision, address]);

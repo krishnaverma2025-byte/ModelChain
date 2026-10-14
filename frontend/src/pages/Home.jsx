@@ -11,7 +11,8 @@ export default function Home() {
   const [error, setError] = useState("");
   useEffect(() => {
     let active = true;
-    loadCatalog()
+    const controller=new AbortController();
+    loadCatalog({signal:controller.signal})
       .then((items) => {
         if (active)
           setModels(
@@ -29,6 +30,7 @@ export default function Home() {
       });
     return () => {
       active = false;
+      controller.abort();
     };
   }, []);
   return (
