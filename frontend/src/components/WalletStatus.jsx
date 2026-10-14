@@ -48,7 +48,7 @@ export default function WalletStatus() {
           <button onClick={() => action(switchNetwork)}>Switch network</button>
         </>
       ) : (
-        <NetworkBadge />
+        <NetworkBadge compact />
       )}
       {state.authenticated ? (
         <div className="profile-menu-wrapper">
@@ -71,14 +71,8 @@ export default function WalletStatus() {
               <button onClick={() => action(disconnectWallet)}>
                 Disconnect wallet
               </button>
-              {!state.profile && (
-                <Link to="/profile" onClick={() => setOpen(false)}>
-                  Profile & options
-                </Link>
-              )}
-              {!state.profile && (
-                <button onClick={() => action(logout)}>Logout</button>
-              )}
+              <Link to="/profile" onClick={() => setOpen(false)}>Profile & options</Link>
+              <button onClick={() => action(logout)}>Logout</button>
             </div>
           )}
         </div>

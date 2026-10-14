@@ -52,8 +52,8 @@ export default function History({
           setError(snapshot.error);
           onEvents?.(
             selectEvents(snapshot.events, { modelId }).filter(
-              (event) => !event.stale,
-            ),
+              (event) => !event.stale
+            )
           );
           onBusyChange?.(snapshot.busy);
         };
@@ -68,12 +68,12 @@ export default function History({
       } catch (error) {
         if (active) {
           setData((previous) =>
-            previous ? { ...previous, busy: false } : previous,
+            previous ? { ...previous, busy: false } : previous
           );
           setError(
             /Configure VITE_DEPLOYMENT_BLOCK/.test(error.message)
               ? error.message
-              : "Blockchain history could not be read. Check the RPC connection, then retry history.",
+              : "Blockchain history could not be read. Check the RPC connection, then retry history."
           );
           onBusyChange?.(false);
         }
@@ -119,12 +119,16 @@ export default function History({
         {error
           ? "History scan interrupted. Retry to continue from saved progress."
           : !data
-            ? "Loading recent blockchain activity…"
-            : data.busy
-              ? `Searching older contract events… ${data.covered.toLocaleString()} of ${data.total.toLocaleString()} blocks scanned (${data.requests} requests this run).`
-              : data.complete
-                ? "All available contract history loaded."
-                : `Historical activity loaded through block ${data.through ?? "pending"}. Backfill paused; resume from the saved cursor.`}
+          ? "Loading recent blockchain activity…"
+          : data.busy
+          ? `Searching older contract events… ${data.covered.toLocaleString()} of ${data.total.toLocaleString()} blocks scanned (${
+              data.requests
+            } requests this run).`
+          : data.complete
+          ? "All available contract history loaded."
+          : `Historical activity loaded through block ${
+              data.through ?? "pending"
+            }. Backfill paused; resume from the saved cursor.`}
       </p>
       {data && (
         <p className="caption">
@@ -177,8 +181,8 @@ export default function History({
                     {event.name === "LicensePurchased"
                       ? "Buyer"
                       : event.name === "ModelStatusChanged"
-                        ? "Actor (not emitted)"
-                        : "Creator"}
+                      ? "Actor (not emitted)"
+                      : "Creator"}
                   </span>
                   <CopyValue value={event.wallet} label="event wallet" />
                 </div>
@@ -198,21 +202,18 @@ export default function History({
               <tr>
                 <th>Event</th>
                 <th>Model</th>
-                <th>Wallet</th>
-                <th>Value</th>
-                <th>Block</th>
                 <th>Transaction</th>
+                <th>Block</th>
               </tr>
             </thead>
             <tbody>
               {events.map((event) => (
                 <tr key={event.key}>
                   <td>
-                    <strong>{event.title}</strong>
-                    <br />
-                    <Badge tone={event.stale ? "warning" : "info"}>
-                      {event.stale ? "STALE · RECHECK NEEDED" : "ON-CHAIN"}
-                    </Badge>
+                    <strong className="event-type">{event.title}</strong>
+                    {event.stale && (
+                      <Badge tone="warning">STALE · RECHECK NEEDED</Badge>
+                    )}
                   </td>
                   <td>
                     {event.modelId ? (
@@ -222,16 +223,21 @@ export default function History({
                     ) : (
                       "—"
                     )}
-                  </td>
-                  <td>
-                    <CopyValue value={event.wallet} label="event wallet" />
-                  </td>
-                  <td>{event.value !== null ? `${event.value} ETH` : "—"}</td>
-                  <td>
-                    <code>#{event.block}</code>
+                    <details className="event-extra">
+                      <summary>Event details</summary>
+                      <p>
+                        {event.value !== null
+                          ? `${event.value} ETH`
+                          : "No amount emitted"}
+                      </p>
+                      <CopyValue value={event.wallet} label="event wallet" />
+                    </details>
                   </td>
                   <td>
                     <CopyValue value={event.transaction} label="transaction" />
+                  </td>
+                  <td>
+                    <code>#{event.block}</code>
                   </td>
                 </tr>
               ))}

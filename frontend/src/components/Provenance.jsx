@@ -2,9 +2,15 @@ import { useEffect, useRef } from "react";
 import { config } from "../blockchain";
 import { Badge, CopyValue, NetworkBadge } from "./UI";
 
-export function ProvenanceFields({ model, license, registration, integrity }) {
+export function ProvenanceFields({
+  model,
+  license,
+  registration,
+  integrity,
+  compact = false,
+}) {
   return (
-    <dl className="provenance-fields">
+    <dl className={`provenance-fields${compact ? " provenance-grid" : ""}`}>
       {[
         ["Model", `${model.name} · #${model.id}`],
         ["Network", <NetworkBadge />],
@@ -16,6 +22,7 @@ export function ProvenanceFields({ model, license, registration, integrity }) {
         ],
         ["SHA-256", <CopyValue value={model.modelHash} label="SHA-256" />],
         ["License price", `${model.price} ETH`],
+        ["Creator share", model.royalty],
         ["Current wallet", license],
         [
           "Registration block",
@@ -33,12 +40,20 @@ export function ProvenanceFields({ model, license, registration, integrity }) {
           />,
         ],
         ["Integrity", integrity || "Not verified in this session"],
-      ].map(([label, value]) => (
-        <div key={label}>
-          <dt>{label}</dt>
-          <dd>{value}</dd>
-        </div>
-      ))}
+      ]
+        .filter(
+          ([label]) =>
+            !compact ||
+            ["Creator", "Contract", "Storage reference", "SHA-256"].includes(
+              label
+            )
+        )
+        .map(([label, value]) => (
+          <div key={label}>
+            <dt>{label}</dt>
+            <dd>{value}</dd>
+          </div>
+        ))}
     </dl>
   );
 }

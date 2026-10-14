@@ -530,9 +530,11 @@ try {
   switchDuringSign = false;
   assert.equal(await contract.hasLicense(1, account), false);
   assert.equal(await page.locator(".session-timeline li").count(), 0);
+  await page.getByRole('button', { name: 'Trace Model', exact: true }).click();
   await page
-    .getByText("Not verified in this session", { exact: true })
+    .getByRole('dialog').getByText("Not verified in this session", { exact: true })
     .waitFor();
+  await page.keyboard.press('Escape');
   await signIn();
   await page.getByRole("button", { name: "Download licensed model" }).click();
   await page
@@ -578,7 +580,7 @@ try {
     true,
   );
   await page.goto(origin + "/activity");
-  await page.getByRole("heading", { name: "Network Activity" }).waitFor();
+  await page.getByRole("heading", { name: "Blockchain activity" }).waitFor();
   await page.getByText("License Purchased", { exact: true }).first().waitFor();
   assert.equal(
     await page.getByRole("link", { name: "Explorer", exact: true }).count(),
@@ -593,22 +595,38 @@ try {
   await page.goto(origin + "/");
   await page.locator(".model-card").waitFor();
   assert.equal(await page.locator(".model-card").count(), 1);
-  await page.getByLabel("Find your next model").fill("Verified vision");
-  await page.getByRole("button", { name: "Search models" }).click();
+  await page.evaluate(() => document.fonts.ready);
+  assert.equal(await page.evaluate(() => document.fonts.check('600 16px Manrope')), true);
+  assert.equal(await page.evaluate(() => document.fonts.check('400 12px "DM Mono"')), true);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  assert.equal(await page.locator('.aurora-text').evaluate(node => getComputedStyle(node).animationName), 'none');
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  assert.equal(await page.locator('.aurora-text').evaluate(node => getComputedStyle(node).animationName), 'montai-v3-aurora');
+  await page.evaluate(() => { window.__v3NavigationMarker = true; });
+  await page.getByRole('navigation', { name: 'Primary navigation', exact: true }).getByRole('link', { name: 'Marketplace', exact: true }).click();
+  await page.waitForURL('**/marketplace');
+  assert.equal(await page.evaluate(() => window.__v3NavigationMarker), true, 'Navigation reloaded the app');
+  await page.getByRole('navigation', { name: 'Primary navigation', exact: true }).getByRole('link', { name: 'Home', exact: true }).click();
+  await page.waitForURL(origin + '/');
+  await page.locator('main.home-page').waitFor();
+  assert.deepEqual(await page.locator('.home-page > section').evaluateAll(nodes => nodes.map(node => node.className)), ['home-hero', 'recent-models', 'protocol-banner']);
+  assert.equal(await page.locator('.home-search, .home-page .category-tabs, .home-page .architecture, .home-page .workflow, .home-page .capabilities').count(), 0);
+  await page.getByRole('link', { name: 'Explore models', exact: true }).click();
+  await page.getByLabel('Search models', { exact: true }).fill('Verified vision');
   await page.waitForURL("**/marketplace?q=Verified+vision");
   await page.locator(".model-card").waitFor();
   assert.equal(await page.locator(".model-card").count(), 1);
   assert.equal(await page.locator(".model-card details").count(), 0);
-  await page
-    .getByRole("button", { name: "Generative AI", exact: true })
-    .click();
+  await page.getByLabel('Category', { exact: true }).selectOption('Generative AI');
   await page.getByRole("heading", { name: "No models available" }).waitFor();
-  await page
-    .getByRole("button", { name: "Computer Vision", exact: true })
-    .click();
+  await page.getByLabel('Category', { exact: true }).selectOption('Computer Vision');
   await page.locator(".model-card").waitFor();
-  assert.equal(await page.locator(".verified-registration").count(), 1);
-  for (const width of [1440, 1024, 768, 390]) {
+  assert.equal(await page.locator('.art-proof').count(), 1);
+  assert.equal(await page.locator('.model-card .model-description, .model-card .verified-registration').count(), 0);
+  await page.goto(origin + '/models/1');
+  await page.waitForURL('**/model/1');
+  await page.getByRole('heading', { name: 'Verified vision model', exact: true }).waitFor();
+  for (const width of [1440, 1024, 768, 390, 320]) {
     await page.setViewportSize({ width, height: 1000 });
     for (const route of [
       "",
@@ -622,6 +640,9 @@ try {
       "profile",
     ]) {
       await page.goto(origin + "/" + route);
+      await page.locator('header.navbar').waitFor();
+      assert.equal(await page.locator('header.navbar').count(), 1, 'Only one navbar should be rendered');
+      if (route === 'upload') await page.waitForURL('**/upload-model');
       await page.waitForTimeout(400);
       if (["", "marketplace"].includes(route)) {
         await page.locator(".model-card").waitFor();
@@ -631,11 +652,11 @@ try {
             (element) =>
               getComputedStyle(element).gridTemplateColumns.split(" ").length,
           );
-        assert.equal(columns, width > 1024 ? 3 : width > 600 ? 2 : 1);
+        assert.equal(columns, !route ? (width >= 768 ? 3 : 1) : (width >= 1024 ? 3 : width >= 768 ? 2 : 1));
         if (!route)
           assert.match(
             await page.locator("h1").innerText(),
-            /license\s+verified/,
+            /AI models, owned and licensed\s+on-chain\./,
           );
       }
       assert.ok(
@@ -713,17 +734,10 @@ try {
     mismatchTx,
     "Profile/mismatch login sent a transaction",
   );
-  await page
-    .getByRole("button", { name: "Fixture profile ▾", exact: true })
-    .click();
+  await page.locator('.wallet-status').getByRole('button', { name: /●/ }).click();
   await page.getByRole("button", { name: "Logout", exact: true }).click();
   await page.getByRole("link", { name: "Sign in", exact: true }).waitFor();
-  assert.equal(
-    await page
-      .getByRole("button", { name: "Fixture profile ▾", exact: true })
-      .count(),
-    0,
-  );
+  assert.equal(await page.evaluate(async () => Boolean((await import('/src/walletSession.mjs')).walletSession.snapshot().profile)), false, 'Unified logout must clear the optional profile');
   account = await buyer3.getAddress();
   await page.goto(origin + "/model/1");
   await page
@@ -857,7 +871,7 @@ try {
   await page.goto(origin + "/model/0");
   await page.getByRole("heading", { name: "Model Not Found" }).waitFor();
   await page.goto(origin + "/login");
-  await page.getByRole("heading", { name: "Sign in to MontAI" }).waitFor();
+  await page.getByRole("heading", { name: "Welcome to MontAI" }).waitFor();
   assert.deepEqual(errors, []);
   const mobileContext=await browser.newContext({userAgent:'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) Mobile',isMobile:true,viewport:{width:390,height:844}});
   const mobile=await mobileContext.newPage();
@@ -871,7 +885,7 @@ try {
   await mobile.screenshot({path:resolve(temporary,'mobile-metamask-handoff.png'),fullPage:true});
   await mobile.addInitScript(()=>{window.ethereum={request:async({method})=>method==='eth_accounts'?[]:'0x7a69',on:()=>{},removeListener:()=>{}};});
   await mobile.reload();
-  await mobile.getByRole('heading',{name:'Sign in to MontAI',exact:true}).waitFor();
+  await mobile.getByRole('heading',{name:'Welcome to MontAI',exact:true}).waitFor();
   assert.equal(await mobile.getByRole('link',{name:'Open MontAI in MetaMask',exact:true}).count(),0);
   await mobileContext.close();
   // A read outage must be explicit, recoverable and never look like empty history.

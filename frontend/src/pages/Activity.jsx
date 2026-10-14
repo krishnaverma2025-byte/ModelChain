@@ -1,10 +1,8 @@
 import { useEffect, useState } from "react";
 import { config, readContract, errorText } from "../blockchain";
-import useWalletRead from "../useWalletRead";
-import { Architecture, CopyValue, NetworkBadge } from "../components/UI";
+import { CopyValue, NetworkBadge } from "../components/UI";
 import History from "../components/History";
 export default function Activity() {
-  const address = useWalletRead();
   const [count, setCount] = useState(null),
     [error, setError] = useState(""),
     [historyBusy, setHistoryBusy] = useState(true),
@@ -33,9 +31,12 @@ export default function Activity() {
     <main className="page activity-page">
       <header className="page-heading">
         <div>
-          <p className="eyebrow">PROTOCOL / EXPLORER</p>
-          <h1>Network Activity</h1>
-          <p>On-chain activity behind MontAI registrations and licenses.</p>
+          <p className="eyebrow">PROTOCOL EXPLORER</p>
+          <h1>Blockchain activity</h1>
+          <p>
+            An auditable event history read directly from the ModelChain
+            contract.
+          </p>
         </div>
         <button
           disabled={historyBusy}
@@ -57,29 +58,18 @@ export default function Activity() {
           <strong>{count ?? "Unavailable"}</strong>
         </article>
         <article>
-          <span>Authenticated wallet</span>
-          {address ? (
-            <CopyValue value={address} label="connected wallet" />
-          ) : (
-            <span>Not signed in</span>
-          )}
+          <span>Contract</span>
+          <CopyValue value={config.address} label="contract" compact />
         </article>
-      </div>
-      <div className="contract-strip">
-        <span>Contract</span>
-        <CopyValue value={config.address} label="contract" />
       </div>
       {error && (
         <p role="alert" className="error">
           {error}
         </p>
       )}
-      <section className="panel">
-        <h2>Contract events</h2>
+      <section className="activity-history" aria-label="Contract events">
         <History refresh={refresh} onBusyChange={setHistoryBusy} />
       </section>
-      <h2 className="section-heading">What belongs on the blockchain?</h2>
-      <Architecture />
     </main>
   );
 }

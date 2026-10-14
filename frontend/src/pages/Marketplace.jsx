@@ -4,6 +4,8 @@ import { errorText } from "../blockchain";
 import { categories, loadCatalog } from "../catalog";
 import ModelCard from "../components/ModelCard";
 import { Icon } from "../components/UI";
+import { config } from "../blockchain";
+import { networkInfo } from "../networks.mjs";
 export default function Marketplace() {
   const [params, setParams] = useSearchParams();
   const query = params.get("q") || "";
@@ -17,15 +19,15 @@ export default function Marketplace() {
   const [models, setModels] = useState([]),
     [loading, setLoading] = useState(true),
     [error, setError] = useState(""),
-    [status, setStatus] = useState("Active"),
+    [status, setStatus] = useState("All statuses"),
     [revision, setRevision] = useState(0);
   useEffect(() => {
     let active = true;
-    const controller=new AbortController();
+    const controller = new AbortController();
     async function load() {
       setLoading(true);
       try {
-        const items = await loadCatalog({signal:controller.signal});
+        const items = await loadCatalog({ signal: controller.signal });
         if (active) {
           setModels(items);
           setError("");
@@ -47,34 +49,47 @@ export default function Marketplace() {
       (status === "All statuses" || m.active === (status === "Active")) &&
       (category === "All categories" || m.category === category) &&
       [m.name, m.description, m.owner, m.id, m.category].some((v) =>
-        v?.toLowerCase().includes(query.toLowerCase()),
-      ),
+        v?.toLowerCase().includes(query.toLowerCase())
+      )
   );
   return (
     <main className="page marketplace-page">
       <header className="page-heading">
         <div>
-          <p className="eyebrow">MONTAI MARKETPLACE</p>
-          <h1>Explore AI Models</h1>
-          <p>Find verified AI model registrations from independent creators.</p>
+          <p className="eyebrow">MODEL REGISTRY</p>
+          <h1>Marketplace</h1>
+          <p>
+            {loading
+              ? "Reading model registrations…"
+              : error
+              ? "Blockchain catalog unavailable."
+              : `${
+                  visible.length
+                } independently published models available on ${
+                  networkInfo(config.chainId).name
+                }.`}
+          </p>
         </div>
         <Link className="primary-button" to="/upload-model">
-          Register Model <Icon name="arrow" />
+          <Icon name="upload" />
+          Register model
         </Link>
       </header>
       <div className="registry-toolbar">
         <label className="search">
-          Search models
+          <span className="sr-only">Search models</span>
+          <Icon name="search" />
           <input
             type="search"
-            placeholder="Name, description, creator or model ID"
+            placeholder="Search models or creators"
             value={query}
             onChange={(e) => filter("q", e.target.value)}
           />
         </label>
         <label>
-          Category
+          <span className="sr-only">Category</span>
           <select
+            aria-label="Category"
             value={category}
             onChange={(e) => filter("category", e.target.value)}
           >
@@ -85,13 +100,19 @@ export default function Marketplace() {
                 ...models.map((m) => m.category).filter(Boolean),
               ]),
             ].map((c) => (
-              <option key={c}>{c}</option>
+              <option key={c} value={c}>
+                {c === "All categories" ? "All" : c}
+              </option>
             ))}
           </select>
         </label>
         <label>
-          Status
-          <select value={status} onChange={(e) => setStatus(e.target.value)}>
+          <span className="sr-only">Status</span>
+          <select
+            aria-label="Status"
+            value={status}
+            onChange={(e) => setStatus(e.target.value)}
+          >
             {["Active", "Inactive", "All statuses"].map((s) => (
               <option key={s}>{s}</option>
             ))}
@@ -101,26 +122,10 @@ export default function Marketplace() {
           Refresh
         </button>
       </div>
-      <nav className="category-tabs" aria-label="Model categories">
-        {["All categories", ...categories].map((item) => (
-          <button
-            key={item}
-            aria-pressed={category === item}
-            onClick={() => filter("category", item)}
-          >
-            {item === "All categories" ? "All" : item}
-          </button>
-        ))}
-      </nav>
       {loading && <p role="status">Loading models from the blockchain…</p>}
       {error && (
         <p role="alert" className="error">
           {error}
-        </p>
-      )}
-      {!loading && !error && (
-        <p className="caption">
-          {visible.length} matching models · Registration verifiable on-chain
         </p>
       )}
       {!loading && !error && !visible.length && (

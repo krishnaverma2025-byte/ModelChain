@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ethers } from "ethers";
-import { Badge, CopyValue, NetworkBadge } from "../components/UI";
+import { Badge, CopyValue, NetworkBadge, Icon } from "../components/UI";
 import {
   config,
   wallet,
@@ -12,7 +12,7 @@ import {
 } from "../blockchain";
 import useIdentity from "../useIdentity";
 import WalletGate from "../components/WalletGate";
-import { rollbackUpload } from '../upload-rollback.mjs';
+import { rollbackUpload } from "../upload-rollback.mjs";
 
 function UploadModel() {
   const identity = useIdentity();
@@ -65,8 +65,10 @@ function UploadModel() {
   const handleRegister = async (e) => {
     e.preventDefault();
     if (operation.current || loading || hashPending) return;
-    if(uncertain.current) {
-      setError('The previous registration has an unknown broadcast outcome. Check the wallet transaction history before starting another registration. Its upload was not deleted.');
+    if (uncertain.current) {
+      setError(
+        "The previous registration has an unknown broadcast outcome. Check the wallet transaction history before starting another registration. Its upload was not deleted."
+      );
       return;
     }
     setError("");
@@ -80,7 +82,7 @@ function UploadModel() {
       modelFile.size > 25 * 1024 * 1024
     ) {
       setError(
-        "Enter a name, positive ETH price and a model file up to 25 MB.",
+        "Enter a name, positive ETH price and a model file up to 25 MB."
       );
       return;
     }
@@ -94,11 +96,15 @@ function UploadModel() {
     }
     operation.current = true;
     setLoading(true);
-    let pendingUpload, uploadHeaders, transaction = registration.current, receipt, sendStarted=false;
+    let pendingUpload,
+      uploadHeaders,
+      transaction = registration.current,
+      receipt,
+      sendStarted = false;
     try {
       setStage("authentication");
       const { address, contract, headers } = await wallet();
-      uploadHeaders=headers;
+      uploadHeaders = headers;
       setSignerAddress(address);
       setMessage("Wallet authenticated. Preparing encrypted storage…");
       const form = new FormData();
@@ -117,7 +123,7 @@ function UploadModel() {
       ]);
       if (registration.current && stored?.uploadKey !== uploadKey)
         throw new Error(
-          "A registration is already submitted. Check Marketplace before starting another model registration.",
+          "A registration is already submitted. Check Marketplace before starting another model registration."
         );
       const uploaded =
         stored?.uploadKey === uploadKey
@@ -125,7 +131,7 @@ function UploadModel() {
           : await (
               await api("/api/uploads", { method: "POST", headers, body: form })
             ).json();
-      pendingUpload=uploaded;
+      pendingUpload = uploaded;
       if (uploaded.modelHash !== (await hashFile(modelFile)))
         throw new Error("Upload integrity mismatch.");
       setStored({ ...uploaded, uploadKey });
@@ -134,9 +140,9 @@ function UploadModel() {
       setMessage(
         uploaded.storage === "local"
           ? "Development storage: encrypted local bytes. Confirm registration in MetaMask."
-          : "Encrypted IPFS upload complete. Confirm registration in MetaMask.",
+          : "Encrypted IPFS upload complete. Confirm registration in MetaMask."
       );
-      sendStarted=true;
+      sendStarted = true;
       const tx =
         registration.current ||
         (await contract.registerModel(
@@ -144,10 +150,10 @@ function UploadModel() {
           uploaded.cid,
           uploaded.modelHash,
           ethers.parseEther(price),
-          Number(royalty),
+          Number(royalty)
         ));
       registration.current = tx;
-      transaction=tx;
+      transaction = tx;
       setMessage("Transaction submitted. Waiting for confirmation…");
       receipt = await tx.wait();
       if (receipt.status !== 1) {
@@ -167,7 +173,7 @@ function UploadModel() {
         .find((log) => log?.name === "ModelRegistered");
       if (!event)
         throw new Error(
-          "Registration confirmed; refresh Marketplace to find your model.",
+          "Registration confirmed; refresh Marketplace to find your model."
         );
       navigate("/model/" + event.args.modelId.toString(), {
         state: {
@@ -175,15 +181,43 @@ function UploadModel() {
         },
       });
     } catch (err) {
-      const rollback = await rollbackUpload({cid:pendingUpload?.cid,transaction,receipt,error:err,sendStarted},cid=>api(`/api/uploads/${encodeURIComponent(cid)}`,{method:'DELETE',headers:uploadHeaders}));
+      const rollback = await rollbackUpload(
+        {
+          cid: pendingUpload?.cid,
+          transaction,
+          receipt,
+          error: err,
+          sendStarted,
+        },
+        (cid) =>
+          api(`/api/uploads/${encodeURIComponent(cid)}`, {
+            method: "DELETE",
+            headers: uploadHeaders,
+          })
+      );
       // Even a failed compensation may already have unpinned ciphertext. Never
       // reuse that CID for a later registration; an explicit retry uploads anew.
-      if(rollback.attempted) {setStored(null);registration.current=null;}
-      if(pendingUpload && !rollback.attempted && !transaction && !receipt) uncertain.current=true;
+      if (rollback.attempted) {
+        setStored(null);
+        registration.current = null;
+      }
+      if (pendingUpload && !rollback.attempted && !transaction && !receipt)
+        uncertain.current = true;
       // A mined failure must never be reused as a pending registration on retry.
-      if(receipt?.status===0 || err.receipt?.status===0) registration.current=null;
+      if (receipt?.status === 0 || err.receipt?.status === 0)
+        registration.current = null;
       setStage("failed");
-      setError([errorText(err),rollback.message, !rollback.attempted && pendingUpload ? 'Upload retained because registration may be pending or confirmed. Check its transaction before starting another registration.' : ''].filter(Boolean).join(' '));
+      setError(
+        [
+          errorText(err),
+          rollback.message,
+          !rollback.attempted && pendingUpload
+            ? "Upload retained because registration may be pending or confirmed. Check its transaction before starting another registration."
+            : "",
+        ]
+          .filter(Boolean)
+          .join(" ")
+      );
     } finally {
       operation.current = false;
       setLoading(false);
@@ -193,35 +227,17 @@ function UploadModel() {
   return (
     <div className="upload-page">
       <main className="upload-content">
-        <p className="storage-note">
-          Your model is encrypted off-chain: IPFS when configured, encrypted
-          local storage in development. Blockchain stores its storage
-          identifier, original SHA-256 hash, ownership and licensing
-          information. Maximum file size: 25 MB.
-        </p>
+        <div className="section-label">CREATOR STUDIO</div>
 
-        <div className="section-label">LIST YOUR MODEL</div>
-
-        <h1>Upload AI Model</h1>
+        <h1>Register a model</h1>
 
         <p className="upload-description">
-          Register your AI model and make it available for decentralized
-          licensing.
+          Encrypt your model, pin it off-chain, and register its provenance on{" "}
+          {config.chainId === 11155111n ? "Sepolia" : "your local chain"}.
         </p>
 
-        <ol className="publish-stepper" aria-label="Model publishing stages">
-          {["Model", "Security", "Storage", "Blockchain"].map(
-            (label, index) => (
-              <li key={label}>
-                <code>{index + 1}</code>
-                <span>{label}</span>
-              </li>
-            ),
-          )}
-        </ol>
         <div className="upload-layout">
           <fieldset className="upload-card panel" disabled={loading}>
-            <legend>01 / MODEL</legend>
             <WalletGate action="register a model" />
 
             <div className="form-group">
@@ -242,7 +258,7 @@ function UploadModel() {
               <textarea
                 id="model-description"
                 placeholder="Describe your AI model"
-                rows="5"
+                rows="4"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
               />
@@ -290,15 +306,16 @@ function UploadModel() {
                 value={royalty}
                 onChange={(e) => setRoyalty(e.target.value)}
               />
-              <p>
-                You receive this percentage of each sale; the platform receives
-                the remainder.
-              </p>
             </div>
             <div className="form-group">
               <label htmlFor="model-file">Model File</label>
 
               <div className="file-upload">
+                <Icon name="upload" />
+                <strong>Select model source</strong>
+                <span>
+                  .zip, .onnx, .pt, .pkl, .bin, .safetensors · Up to 25 MB
+                </span>
                 <input
                   id="model-file"
                   type="file"
@@ -306,7 +323,7 @@ function UploadModel() {
                   onChange={handleFileChange}
                 />
 
-                <span>{modelFile ? modelFile.name : "Select model file"}</span>
+                {modelFile && <span>{modelFile.name}</span>}
               </div>
             </div>
 
@@ -343,85 +360,104 @@ function UploadModel() {
             </button>
           </fieldset>
           <aside className="upload-stages">
+            <p className="eyebrow">Registration flow</p>
+            <section className="registration-step">
+              <code>1</code>
+              <div>
+                <h2>Model</h2>
+                <p>Validate metadata and file</p>
+              </div>
+            </section>
             <section className="panel">
-              <p className="eyebrow">02 / SECURITY</p>
-              <h2>Original integrity reference</h2>
-              <Badge
-                tone={
-                  fileHash ? "success" : hashPending ? "warning" : "neutral"
-                }
-              >
-                {fileHash
-                  ? "HASH CALCULATED"
-                  : hashPending
+              <code className="step-number">2</code>
+              <h2>Security</h2>
+              <p>Hash and AES encrypt</p>
+              <details>
+                <summary>Hash & file status</summary>
+                <Badge
+                  tone={
+                    fileHash ? "success" : hashPending ? "warning" : "neutral"
+                  }
+                >
+                  {fileHash
+                    ? "HASH CALCULATED"
+                    : hashPending
                     ? "PENDING"
                     : "SELECT A FILE"}
-              </Badge>
-              <p>{modelFile?.name || "No model selected"}</p>
-              <CopyValue value={fileHash} label="original SHA-256" />
-              <p className="caption">
-                SHA-256 is calculated locally. The backend encrypts the original
-                before uploading it to storage.
-              </p>
+                </Badge>
+                <p>{modelFile?.name || "No model selected"}</p>
+                <CopyValue value={fileHash} label="original SHA-256" />
+                <p className="caption">
+                  SHA-256 is calculated locally. The backend encrypts the
+                  original before uploading it to storage.
+                </p>
+              </details>
             </section>
             <section className="panel">
-              <p className="eyebrow">03 / STORAGE</p>
-              <h2>Encrypted package</h2>
-              <Badge
-                tone={
-                  stored
-                    ? "success"
-                    : stage === "storage"
+              <code className="step-number">3</code>
+              <h2>Storage</h2>
+              <p>Pin encrypted file to IPFS</p>
+              <details>
+                <summary>Storage status</summary>
+                <Badge
+                  tone={
+                    stored
+                      ? "success"
+                      : stage === "storage"
                       ? "warning"
                       : "neutral"
-                }
-              >
-                {stored
-                  ? "STORED"
-                  : stage === "storage"
+                  }
+                >
+                  {stored
+                    ? "STORED"
+                    : stage === "storage"
                     ? "PENDING"
                     : "NOT STARTED"}
-              </Badge>
-              <p>
-                {stored
-                  ? stored.storage === "ipfs"
-                    ? "Encrypted IPFS upload complete."
-                    : "Encrypted local development storage."
-                  : "Encryption and storage start after wallet authentication."}
-              </p>
-              <CopyValue value={stored?.cid} label="storage CID" />
+                </Badge>
+                <p>
+                  {stored
+                    ? stored.storage === "ipfs"
+                      ? "Encrypted IPFS upload complete."
+                      : "Encrypted local development storage."
+                    : "Encryption and storage start after wallet authentication."}
+                </p>
+                <CopyValue value={stored?.cid} label="storage CID" />
+              </details>
             </section>
             <section className="panel">
-              <p className="eyebrow">04 / BLOCKCHAIN</p>
-              <h2>Registration</h2>
-              <NetworkBadge />
-              <p>Price: {price || "—"} ETH</p>
-              <p className="caption">
-                Creator receives: {royalty}% · Platform receives:{" "}
-                {100 - Number(royalty)}%. For 0.05 ETH at 90%: creator 0.045
-                ETH, platform 0.005 ETH.
-              </p>
-              <CopyValue value={signerAddress} label="registration wallet" />
-              <CopyValue value={config.address} label="contract" />
-              <Badge
-                tone={
-                  stage === "failed"
-                    ? "error"
-                    : stage === "blockchain"
+              <code className="step-number">4</code>
+              <h2>Blockchain</h2>
+              <p>Confirm registration in MetaMask</p>
+              <details>
+                <summary>Transaction details</summary>
+                <NetworkBadge />
+                <p>Price: {price || "—"} ETH</p>
+                <p className="caption">
+                  Creator receives: {royalty}% · Platform receives:{" "}
+                  {100 - Number(royalty)}%.
+                </p>
+                <CopyValue value={signerAddress} label="registration wallet" />
+                <CopyValue value={config.address} label="contract" />
+                <Badge
+                  tone={
+                    stage === "failed"
+                      ? "error"
+                      : stage === "blockchain"
                       ? "warning"
                       : "neutral"
-                }
-              >
-                {stage === "failed"
-                  ? "FAILED"
-                  : stage === "blockchain"
+                  }
+                >
+                  {stage === "failed"
+                    ? "FAILED"
+                    : stage === "blockchain"
                     ? "PENDING"
                     : "AWAITING REGISTRATION"}
-              </Badge>
-              <p className="caption">
-                One upload, one registration transaction. The mined model page
-                shows its block and transaction from contract logs.
-              </p>
+                </Badge>
+                <p className="caption">
+                  One upload, one registration transaction. The mined model page
+                  shows its block and transaction from contract logs.
+                </p>
+              </details>
             </section>
           </aside>
         </div>

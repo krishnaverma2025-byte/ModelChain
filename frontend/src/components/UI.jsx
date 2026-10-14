@@ -22,6 +22,9 @@ export function Icon({ name = "cube" }) {
     trace: "M5 4v12a4 4 0 0 0 4 4h10M5 8h10M5 14h7",
     shield: "M12 3 4 6v6c0 5 8 9 8 9s8-4 8-9V6l-8-3Zm-4 9 3 3 5-6",
     arrow: "M5 12h14m-6-6 6 6-6 6",
+    download: "M12 3v12m0 0 5-5m-5 5-5-5M5 21h14",
+    upload: "M12 16V4m0 0L7 9m5-5 5 5M4 15v5h16v-5",
+    search: "m21 21-4.3-4.3M19 11a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z",
   };
   return (
     <svg
@@ -74,11 +77,10 @@ export function CopyValue({ value, label = "value", compact = false }) {
     </span>
   );
 }
-export function NetworkBadge() {
+export function NetworkBadge({ compact = false }) {
   return (
     <Badge tone="info">
-      {networkInfo(config.chainId).name}{" "}
-      · <code>{String(config.chainId)}</code>
+      {compact ? networkInfo(config.chainId).name.replace(' Testnet', '') : <>{networkInfo(config.chainId).name} · <code>{String(config.chainId)}</code></>}
     </Badge>
   );
 }

@@ -7,7 +7,7 @@ import {
   purchaseModelLicense,
   errorText,
 } from "../blockchain";
-import { Badge, CopyValue, VerifiedBadge } from "../components/UI";
+import { Badge, CopyValue } from "../components/UI";
 import {
   ProvenanceDrawer,
   ProvenanceFields,
@@ -65,7 +65,9 @@ function Details() {
 
         if (cancelled) return;
 
-        const extra = await metadata(blockchainId,{signal:controller.signal});
+        const extra = await metadata(blockchainId, {
+          signal: controller.signal,
+        });
         if (cancelled) return;
         setModel({
           id: data.id.toString(),
@@ -92,19 +94,19 @@ function Details() {
             if (accounts.length > 0) {
               const alreadyLicensed = await contract.hasLicense(
                 blockchainId,
-                accounts[0],
+                accounts[0]
               );
 
               if (!cancelled) {
                 setLicensed(alreadyLicensed);
                 setLicenseKnown(true);
                 setOwner(
-                  accounts[0].toLowerCase() === data.owner.toLowerCase(),
+                  accounts[0].toLowerCase() === data.owner.toLowerCase()
                 );
               }
             }
           } catch (licenseError) {
-            if(!cancelled) setError(errorText(licenseError));
+            if (!cancelled) setError(errorText(licenseError));
           }
         }
       } catch (err) {
@@ -113,7 +115,7 @@ function Details() {
 
           setError(
             errorText(err) ||
-              "Could not load this model. Make sure the Hardhat node is running.",
+              "Could not load this model. Make sure the Hardhat node is running."
           );
         }
       } finally {
@@ -151,7 +153,7 @@ function Details() {
       setLicensed(true);
       setLicenseKnown(true);
       setSuccess(
-        `License verified on-chain for ${result.address}. Transaction: ${result.transactionHash}`,
+        `License verified on-chain for ${result.address}. Transaction: ${result.transactionHash}`
       );
     } catch (err) {
       if (request === revision.current) {
@@ -197,17 +199,17 @@ function Details() {
     .reverse()
     .find((e) => e.layer === "LOCAL")?.title;
   const registration = events.find(
-    (e) => e.name === "ModelRegistered" && e.modelId === id,
+    (e) => e.name === "ModelRegistered" && e.modelId === id
   );
   const license = owner
     ? "CREATOR"
     : !address
-      ? "Not authenticated"
-      : !licenseKnown
-        ? "License check unavailable"
-        : licensed
-          ? "LICENSED"
-          : "UNLICENSED";
+    ? "Not authenticated"
+    : !licenseKnown
+    ? "License check unavailable"
+    : licensed
+    ? "LICENSED"
+    : "UNLICENSED";
   function record(e) {
     setSession((previous) => ({
       scope,
@@ -219,28 +221,20 @@ function Details() {
       <Link className="back-link" to="/marketplace">
         ← Back to Marketplace
       </Link>
-      <header className="page-heading details-header">
+      <header
+        className="page-heading details-header"
+        data-category={model.category}
+      >
         <div>
           <p className="eyebrow">
             {model.category} / <code>#{model.id}</code>
           </p>
           <h1>{model.name}</h1>
-          <p>{model.description}</p>
           <div className="details-creator">
             <span>Creator</span>
             <CopyValue value={model.creator} label="creator" compact />
           </div>
-          <div className="actions">
-            <Badge tone={model.active ? "success" : "neutral"}>
-              {model.active ? "ACTIVE" : "INACTIVE"}
-            </Badge>
-            <Badge tone={licensed ? "success" : "neutral"}>{license}</Badge>
-            <VerifiedBadge />
-          </div>
         </div>
-        <button className="secondary-button" onClick={() => setTrace(true)}>
-          Trace Model
-        </button>
       </header>
       <nav className="details-sections" aria-label="Model sections">
         <a href="#model-overview">Overview</a>
@@ -249,19 +243,17 @@ function Details() {
         <a href="#model-history">History</a>
       </nav>
       <div className="details-grid">
-        <aside className="license-card panel" id="model-access">
-          <p className="eyebrow">WALLET-BOUND LICENSE</p>
-          <h2>Model access</h2>
+        <aside className="license-card panel">
+          <div className="section-head">
+            <span className="caption">Wallet-bound license</span>
+            <Badge tone={model.active ? "success" : "neutral"}>
+              {model.active ? "Active" : "Inactive"}
+            </Badge>
+          </div>
           <div className="license-price">
             {model.price} <span>ETH</span>
           </div>
-          <Badge tone={model.active ? "success" : "neutral"}>
-            {model.active ? "ACTIVE" : "INACTIVE"}
-          </Badge>
-          <p>
-            A license is recorded for the purchasing wallet. Encrypted delivery
-            is authorized independently by the backend.
-          </p>
+          <p className="caption">One-time payment · Wallet-bound access</p>
           {!address && (
             <>
               <p className="eyebrow">YOUR ACCESS</p>
@@ -278,12 +270,12 @@ function Details() {
               {licensed
                 ? "License Owned"
                 : purchasing
-                  ? "Transaction Pending"
-                  : owner
-                    ? "You own this model"
-                    : !model.active
-                      ? "Listing inactive"
-                      : "License Model"}
+                ? "Transaction Pending"
+                : owner
+                ? "You own this model"
+                : !model.active
+                ? "Listing inactive"
+                : "License Model"}
             </button>
           )}
           {success && (
@@ -296,37 +288,61 @@ function Details() {
               <Badge tone="error">FAILED</Badge> {error}
             </p>
           )}
-          {address && (
-            <ModelAccess key={scope} id={model.id} onEvidence={record} />
-          )}
+          <button
+            className="secondary-button trace-button"
+            onClick={() => setTrace(true)}
+          >
+            Trace Model
+          </button>
         </aside>
         <div className="details-left">
           <section className="panel" id="model-overview">
             <p className="eyebrow">OVERVIEW</p>
             <h2>About this model</h2>
-            <p>{model.about}</p>
-            <p className="caption">
-              Creator share: {model.royalty}. Wallet-bound access; no resale or
-              usage-rights enforcement.
-            </p>
+            <p>{model.description}</p>
+            <div className="model-metadata-grid">
+              {[
+                ["Framework", "Not recorded"],
+                ["File size", "Not recorded"],
+                ["Version", model.version],
+              ].map(([label, value]) => (
+                <div key={label}>
+                  <p>{label}</p>
+                  <strong>{value}</strong>
+                </div>
+              ))}
+            </div>
           </section>
           <section className="panel" id="model-provenance">
             <p className="eyebrow">PROVENANCE</p>
-            <h2>Verifiable references</h2>
+            <h2>Verifiable registration data</h2>
             <ProvenanceFields
+              compact
               model={model}
               license={license}
               registration={registration}
               integrity={integrity}
             />
           </section>
+          <section className="panel" id="model-access">
+            <p className="eyebrow">License / Access</p>
+            <h2>Secure model delivery</h2>
+            {address ? (
+              <ModelAccess key={scope} id={model.id} onEvidence={record} />
+            ) : (
+              <p>
+                Sign in and purchase a license to securely download and verify
+                this model.
+              </p>
+            )}
+          </section>
         </div>
       </div>
       <section className="panel history-panel" id="model-history">
         <div className="section-head">
           <div>
-            <p className="eyebrow">04 / MODEL HISTORY</p>
-            <h2>Trace the record</h2>
+            <p className="eyebrow">History</p>
+            <h2>Protocol activity</h2>
           </div>
           <Link to="/activity">All protocol activity →</Link>
         </div>
@@ -336,7 +352,10 @@ function Details() {
           refresh={licensed ? 1 : 0}
           onEvents={setEvents}
         />
-        <SessionTimeline events={evidence} />
+        <details className="session-evidence">
+          <summary>Current-session evidence</summary>
+          <SessionTimeline events={evidence} />
+        </details>
       </section>
       {trace && (
         <ProvenanceDrawer
