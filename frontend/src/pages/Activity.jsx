@@ -7,6 +7,7 @@ export default function Activity() {
   const address = useWalletRead();
   const [count, setCount] = useState(null),
     [error, setError] = useState(""),
+    [historyBusy, setHistoryBusy] = useState(true),
     [refresh, setRefresh] = useState(0);
   useEffect(() => {
     let active = true;
@@ -36,7 +37,13 @@ export default function Activity() {
           <h1>Network Activity</h1>
           <p>On-chain activity behind MontAI registrations and licenses.</p>
         </div>
-        <button onClick={() => setRefresh((n) => n + 1)}>
+        <button
+          disabled={historyBusy}
+          onClick={() => {
+            setHistoryBusy(true);
+            setRefresh((n) => n + 1);
+          }}
+        >
           Refresh chain data
         </button>
       </header>
@@ -69,7 +76,7 @@ export default function Activity() {
       )}
       <section className="panel">
         <h2>Contract events</h2>
-        <History refresh={refresh} />
+        <History refresh={refresh} onBusyChange={setHistoryBusy} />
       </section>
       <h2 className="section-heading">What belongs on the blockchain?</h2>
       <Architecture />
