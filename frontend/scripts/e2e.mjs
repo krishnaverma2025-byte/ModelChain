@@ -193,8 +193,35 @@ try {
     return result;
   });
   async function signIn() {
-    await page.waitForFunction(async()=>!(await import('/src/walletSession.mjs')).walletSession.snapshot().restoring);
-    if(await page.locator('.wallet-status').getByRole('button',{name:/●/}).count()) return;
+    // The external store settles before React necessarily commits its render.
+    // Select from session state, not an immediate count of potentially stale DOM.
+    // Playwright's predicate must be synchronous: a Promise is truthy even
+    // when its eventual value is false, so async predicates do not keep polling.
+    await page.evaluate(async () => {
+      const { walletSession } = await import('/src/walletSession.mjs');
+      window.__e2eWalletState = () => {
+        const { restoring, authenticated } = walletSession.snapshot();
+        return { restoring, authenticated: Boolean(authenticated) };
+      };
+    });
+    const settledSession = await page.waitForFunction(() => {
+      const state = window.__e2eWalletState();
+      if (state.restoring) return false;
+      const authenticated = Boolean(state.authenticated);
+      const button = authenticated
+        ? [...document.querySelectorAll('.wallet-status button')].find(node => node.textContent.includes('●'))
+        : [...document.querySelectorAll('button')].find(node => node.textContent.trim() === 'Sign in with MetaMask');
+      // Require the rendered UI to agree with the current store in the same poll.
+      return button && !button.disabled && button.getClientRects().length
+        ? { authenticated }
+        : false;
+    });
+    const { authenticated } = await settledSession.jsonValue();
+    await settledSession.dispose();
+    if (authenticated) {
+      await page.locator('.wallet-status').getByRole('button', { name: /●/ }).waitFor();
+      return;
+    }
     await page
       .getByRole("button", { name: "Sign in with MetaMask", exact: true })
       .click();
@@ -717,9 +744,42 @@ try {
     path: resolve(temporary, "details-desktop.png"),
     fullPage: true,
   });
+  const signaturesBeforeDashboard = authRequests;
+  let releaseRestoration;
+  const restorationGate = new Promise(resolve => { releaseRestoration = resolve; });
+  await page.route(api + '/api/auth/session', async route => {
+    if (route.request().method() === 'GET') await restorationGate;
+    await route.continue();
+  });
   await page.goto(origin + "/dashboard");
+  let dashboardSignInFinished = false;
+  const dashboardSignIn = signIn().then(() => { dashboardSignInFinished = true; });
+  await page.getByRole('button', { name: 'Verifying wallet session…', exact: true }).waitFor();
+  assert.equal(dashboardSignInFinished, false, 'Helper returned before restoration settled');
+  releaseRestoration();
+  await dashboardSignIn;
+  await page.unroute(api + '/api/auth/session');
+  await page.getByRole("link", { name: "Access & verify →" }).waitFor();
+  assert.equal(authRequests, signaturesBeforeDashboard, 'Details → Dashboard requested another signature');
+  await page.reload();
   await signIn();
   await page.getByRole("link", { name: "Access & verify →" }).waitFor();
+  assert.equal(authRequests, signaturesBeforeDashboard, 'Dashboard refresh requested another signature');
+  for (const invalidation of ['expired', 'invalid']) {
+    await page.evaluate(reason => {
+      const key = 'montai.wallet-session.v1';
+      const saved = JSON.parse(sessionStorage.getItem(key));
+      if (reason === 'expired') saved.expiresAt = Date.now() - 1;
+      else saved.token = 'Bearer invalid-e2e-fixture';
+      sessionStorage.setItem(key, JSON.stringify(saved));
+    }, invalidation);
+    const signaturesBeforeLogin = authRequests;
+    await page.reload();
+    await page.getByRole('button', { name: 'Sign in with MetaMask', exact: true }).waitFor();
+    await signIn();
+    assert.equal(authRequests, signaturesBeforeLogin + 1, `${invalidation} Dashboard session must require a fresh signature`);
+    await page.getByRole("link", { name: "Access & verify →" }).waitFor();
+  }
   wrongNetwork=true;
   await page.evaluate(() => window.emitWalletEvent("chainChanged", "0x1"));
   await page
