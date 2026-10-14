@@ -200,7 +200,7 @@ function UploadModel() {
           information. Maximum file size: 25 MB.
         </p>
 
-        <div className="section-label">LIST YOUR MODEL</div>
+        <div className="section-label">CREATOR STUDIO</div>
 
         <h1>Upload AI Model</h1>
 

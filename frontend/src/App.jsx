@@ -1,7 +1,14 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate,
+  useParams,
+  Link,
+} from "react-router-dom";
 
 import Navbar from "./components/Navbar";
-import AccessServiceNotice from './components/AccessServiceNotice';
+import AccessServiceNotice from "./components/AccessServiceNotice";
 
 import Activity from "./pages/Activity";
 import Home from "./pages/Home";
@@ -14,10 +21,38 @@ import Profile from "./pages/Profile";
 import Signup from "./pages/Signup";
 import "./montai.css";
 import "./auth.css";
-import "./marketplace-refinement.css";
+import "./v3.css";
 import { useEffect } from "react";
 import { initializeIdentity } from "./identity";
 import useIdentity from "./useIdentity";
+import { config } from "./blockchain";
+import { explorerLink } from "./networks.mjs";
+
+function ModelAlias() {
+  const { id } = useParams();
+  return <Navigate to={`/model/${encodeURIComponent(id)}`} replace />;
+}
+
+function Footer() {
+  const contract = explorerLink(config.chainId, "address", config.address);
+  return (
+    <footer className="site-footer">
+      <strong>MontAI</strong>
+      <span>Verifiable AI ownership. Secure model access.</span>
+      <nav aria-label="Footer navigation">
+        <Link to="/activity">Activity & status</Link>
+        {contract ? (
+          <a href={contract} target="_blank" rel="noopener noreferrer">
+            Contract ↗
+          </a>
+        ) : (
+          <span>Local development</span>
+        )}
+        <Link to="/profile">Profile</Link>
+      </nav>
+    </footer>
+  );
+}
 
 function App() {
   const identity = useIdentity();
@@ -34,10 +69,14 @@ function App() {
         {/* MAIN PAGES */}
         <Route path="/marketplace" element={<Marketplace />} />
         <Route path="/upload-model" element={<UploadModel />} />
-        <Route path="/upload" element={<UploadModel />} />
+        <Route
+          path="/upload"
+          element={<Navigate to="/upload-model" replace />}
+        />
         <Route path="/activity" element={<Activity />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/model/:id" element={<Details />} />
+        <Route path="/models/:id" element={<ModelAlias />} />
 
         {/* AUTHENTICATION */}
         <Route path="/login" element={<Login />} />
@@ -49,6 +88,7 @@ function App() {
         {/* ANY UNKNOWN URL */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      <Footer />
     </BrowserRouter>
   );
 }

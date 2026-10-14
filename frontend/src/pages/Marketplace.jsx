@@ -54,7 +54,7 @@ export default function Marketplace() {
     <main className="page marketplace-page">
       <header className="page-heading">
         <div>
-          <p className="eyebrow">MONTAI MARKETPLACE</p>
+          <p className="eyebrow">MODEL REGISTRY</p>
           <h1>Explore AI Models</h1>
           <p>Find verified AI model registrations from independent creators.</p>
         </div>

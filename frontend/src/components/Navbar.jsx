@@ -4,6 +4,7 @@ import useIdentity from "../useIdentity";
 import { logout } from "../identity";
 import { errorText } from "../blockchain";
 import WalletStatus from "./WalletStatus";
+import { Icon } from './UI';
 export default function Navbar() {
   const { profile } = useIdentity(),
     navigate = useNavigate(),
@@ -29,7 +30,7 @@ export default function Navbar() {
   return (
     <header className="navbar">
       <Link to="/" className="navbar-logo">
-        MontAI
+        <span className="brand-mark"><Icon /></span>MontAI
       </Link>
       <nav className="navbar-links" aria-label="Primary navigation">
         <NavLink to="/" end>

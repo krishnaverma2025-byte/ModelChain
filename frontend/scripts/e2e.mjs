@@ -593,6 +593,19 @@ try {
   await page.goto(origin + "/");
   await page.locator(".model-card").waitFor();
   assert.equal(await page.locator(".model-card").count(), 1);
+  await page.evaluate(() => document.fonts.ready);
+  assert.equal(await page.evaluate(() => document.fonts.check('600 16px Manrope')), true);
+  assert.equal(await page.evaluate(() => document.fonts.check('400 12px "DM Mono"')), true);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  assert.equal(await page.locator('.aurora-text').evaluate(node => getComputedStyle(node).animationName), 'none');
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  assert.equal(await page.locator('.aurora-text').evaluate(node => getComputedStyle(node).animationName), 'montai-v3-aurora');
+  await page.evaluate(() => { window.__v3NavigationMarker = true; });
+  await page.getByRole('navigation', { name: 'Primary navigation', exact: true }).getByRole('link', { name: 'Marketplace', exact: true }).click();
+  await page.waitForURL('**/marketplace');
+  assert.equal(await page.evaluate(() => window.__v3NavigationMarker), true, 'Navigation reloaded the app');
+  await page.getByRole('navigation', { name: 'Primary navigation', exact: true }).getByRole('link', { name: 'Home', exact: true }).click();
+  await page.waitForURL(origin + '/');
   await page.getByLabel("Find your next model").fill("Verified vision");
   await page.getByRole("button", { name: "Search models" }).click();
   await page.waitForURL("**/marketplace?q=Verified+vision");
@@ -608,7 +621,10 @@ try {
     .click();
   await page.locator(".model-card").waitFor();
   assert.equal(await page.locator(".verified-registration").count(), 1);
-  for (const width of [1440, 1024, 768, 390]) {
+  await page.goto(origin + '/models/1');
+  await page.waitForURL('**/model/1');
+  await page.getByRole('heading', { name: 'Verified vision model', exact: true }).waitFor();
+  for (const width of [1440, 1024, 768, 390, 320]) {
     await page.setViewportSize({ width, height: 1000 });
     for (const route of [
       "",
@@ -622,6 +638,9 @@ try {
       "profile",
     ]) {
       await page.goto(origin + "/" + route);
+      await page.locator('header.navbar').waitFor();
+      assert.equal(await page.locator('header.navbar').count(), 1, 'Only one navbar should be rendered');
+      if (route === 'upload') await page.waitForURL('**/upload-model');
       await page.waitForTimeout(400);
       if (["", "marketplace"].includes(route)) {
         await page.locator(".model-card").waitFor();
@@ -635,7 +654,7 @@ try {
         if (!route)
           assert.match(
             await page.locator("h1").innerText(),
-            /license\s+verified/,
+            /AI models, owned and licensed\s+on-chain\./,
           );
       }
       assert.ok(

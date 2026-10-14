@@ -267,9 +267,10 @@ function Profile() {
 
         {/* FULL NAME */}
         <div className="profile-section">
-          <label>Full Name</label>
+          <label htmlFor="profile-name">Full Name</label>
 
           <input
+            id="profile-name"
             type="text"
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}

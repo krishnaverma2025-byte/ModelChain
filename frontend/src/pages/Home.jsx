@@ -1,9 +1,16 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { categories, loadCatalog } from "../catalog";
-import { errorText } from "../blockchain";
+import { config, errorText } from "../blockchain";
 import ModelCard from "../components/ModelCard";
-import { Architecture, Badge, Icon } from "../components/UI";
+import {
+  Architecture,
+  Badge,
+  CopyValue,
+  Icon,
+  NetworkBadge,
+} from "../components/UI";
+import { AuroraText, InteractiveGridPattern } from "../components/BrandEffects";
 export default function Home() {
   const navigate = useNavigate();
   const [models, setModels] = useState([]);
@@ -11,15 +18,15 @@ export default function Home() {
   const [error, setError] = useState("");
   useEffect(() => {
     let active = true;
-    const controller=new AbortController();
-    loadCatalog({signal:controller.signal})
+    const controller = new AbortController();
+    loadCatalog({ signal: controller.signal })
       .then((items) => {
         if (active)
           setModels(
             items
               .filter((m) => m.active)
               .reverse()
-              .slice(0, 3),
+              .slice(0, 3)
           );
       })
       .catch((e) => {
@@ -36,15 +43,17 @@ export default function Home() {
   return (
     <main className="page home-page">
       <section className="home-intro">
-        <div>
-          <p className="eyebrow">THE MARKETPLACE FOR INDEPENDENT AI CREATORS</p>
+        <InteractiveGridPattern />
+        <div className="hero-copy">
+          <p className="hero-network">
+            <NetworkBadge />
+          </p>
           <h1>
-            Discover and license <br />
-            <span>verified AI models.</span>
+            AI models, owned and licensed <AuroraText>on-chain.</AuroraText>
           </h1>
           <p className="lead">
-            Explore AI models from independent creators with blockchain-backed
-            ownership, licensing and integrity verification.
+            Discover AI models with verifiable provenance, secure delivery, and
+            transparent licensing. Direct from independent creators.
           </p>
           <p className="caption">
             On-chain verification confirms registration metadata, not model
@@ -59,6 +68,67 @@ export default function Home() {
             </Link>
           </div>
         </div>
+        <aside
+          className="hero-provenance"
+          aria-label="Model provenance preview"
+        >
+          <InteractiveGridPattern dark />
+          <div className="section-head">
+            <span className="eyebrow">MODEL PROVENANCE</span>
+            <Badge tone={error ? "warning" : "info"}>
+              {loading
+                ? "READING"
+                : error
+                ? "UNAVAILABLE"
+                : models.length
+                ? "ON-CHAIN RECORD"
+                : "NO ACTIVE MODELS"}
+            </Badge>
+          </div>
+          <div className="hero-model-icon">
+            <Icon />
+          </div>
+          <h2>
+            {models[0]?.name ||
+              (loading
+                ? "Reading the registry…"
+                : error
+                ? "Registry unavailable"
+                : "Your model belongs here.")}
+          </h2>
+          <p>
+            {models[0]
+              ? `Model #${models[0].id} · ${models[0].category}`
+              : "An auditable record. Not a trust score."}
+          </p>
+          <div className="hero-reference">
+            <span>
+              <Icon name="shield" /> Integrity
+            </span>
+            <strong>SHA-256 reference</strong>
+          </div>
+          <div className="hero-reference">
+            <span>
+              <Icon /> Smart contract
+            </span>
+            <CopyValue
+              value={config.address}
+              label="registry contract"
+              compact
+            />
+          </div>
+          <div className="hero-reference">
+            <span>
+              <Icon name="trace" /> Delivery
+            </span>
+            <strong>Encrypted off-chain</strong>
+          </div>
+          {models[0] && (
+            <Link className="hero-trace-link" to={`/model/${models[0].id}`}>
+              Trace this registration <Icon name="arrow" />
+            </Link>
+          )}
+        </aside>
       </section>
       <form
         action="/marketplace"
@@ -68,7 +138,9 @@ export default function Home() {
           event.preventDefault();
           const query = new FormData(event.currentTarget).get("q").trim();
           navigate(
-            `/marketplace${query ? `?${new URLSearchParams({ q: query })}` : ""}`,
+            `/marketplace${
+              query ? `?${new URLSearchParams({ q: query })}` : ""
+            }`
           );
         }}
       >
@@ -102,8 +174,8 @@ export default function Home() {
       >
         <div className="section-head">
           <div>
-            <p className="eyebrow">DIRECT FROM CREATORS</p>
-            <h2 id="recent-models-heading">Recently registered models</h2>
+            <p className="eyebrow">FEATURED MARKETPLACE</p>
+            <h2 id="recent-models-heading">Discover your next model.</h2>
           </div>
           <Link to="/marketplace">Explore all models →</Link>
         </div>
@@ -127,6 +199,15 @@ export default function Home() {
           {!error &&
             models.map((model) => <ModelCard key={model.id} model={model} />)}
         </div>
+      </section>
+      <section className="protocol-banner">
+        <div>
+          <p className="eyebrow">TRANSPARENT BY DESIGN</p>
+          <h2>Every registration. Every license. On-chain.</h2>
+        </div>
+        <Link className="secondary-button" to="/activity">
+          View protocol activity <Icon name="arrow" />
+        </Link>
       </section>
       <h2 className="section-heading">Why MontAI</h2>
       <section className="capabilities">
@@ -187,8 +268,8 @@ export default function Home() {
                   layer === "ON-CHAIN"
                     ? "info"
                     : layer === "LOCAL"
-                      ? "success"
-                      : "neutral"
+                    ? "success"
+                    : "neutral"
                 }
               >
                 {layer}

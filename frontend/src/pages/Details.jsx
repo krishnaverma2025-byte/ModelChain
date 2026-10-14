@@ -219,7 +219,7 @@ function Details() {
       <Link className="back-link" to="/marketplace">
         ← Back to Marketplace
       </Link>
-      <header className="page-heading details-header">
+      <header className="page-heading details-header" data-category={model.category}>
         <div>
           <p className="eyebrow">
             {model.category} / <code>#{model.id}</code>

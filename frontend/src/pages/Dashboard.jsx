@@ -22,15 +22,17 @@ export default function Dashboard() {
     [licenses, setLicenses] = useState([]),
     [revenue, setRevenue] = useState("0"),
     [status, setStatus] = useState(
-      "Connect your wallet to view your models and licenses.",
+      "Connect your wallet to view your models and licenses."
     ),
-    [busy, setBusy] = useState(false);
+    [busy, setBusy] = useState(false),
+    [loaded, setLoaded] = useState(false);
   async function load(account) {
     loadController.current?.abort();
-    const controller=new AbortController();
-    loadController.current=controller;
+    const controller = new AbortController();
+    loadController.current = controller;
     const request = ++revision.current;
     setBusy(true);
+    setLoaded(false);
     try {
       const c = await readContract();
       const count = await c.getModelCount();
@@ -47,7 +49,7 @@ export default function Dashboard() {
           royalty: m.royalty.toString(),
           active: m.active,
           cid: m.cid,
-          ...(await metadata(id,{signal:controller.signal})),
+          ...(await metadata(id, { signal: controller.signal })),
         };
         if (m.owner.toLowerCase() === account.toLowerCase()) mine.push(entry);
         if (await c.hasLicense(id, account)) owned.push(entry);
@@ -57,6 +59,7 @@ export default function Dashboard() {
       setModels(mine);
       setLicenses(owned);
       setRevenue(earnings);
+      setLoaded(true);
       setStatus("");
     } catch (e) {
       if (request === revision.current) setStatus(errorText(e));
@@ -75,11 +78,12 @@ export default function Dashboard() {
       setModels([]);
       setLicenses([]);
       setRevenue("0");
+      setLoaded(false);
       setBusy(false);
       setStatus(
         a
           ? "Reading blockchain…"
-          : "Connect your wallet to view your models and licenses.",
+          : "Connect your wallet to view your models and licenses."
       );
       if (a) load(a);
     };
@@ -130,6 +134,14 @@ export default function Dashboard() {
     }
   }
   function rows(items, creator) {
+    if (!loaded)
+      return (
+        <div className="empty-state">
+          {busy
+            ? "Reading blockchain…"
+            : "Blockchain data unavailable. Refresh to try again."}
+        </div>
+      );
     return items.length ? (
       <div className="dashboard-models">
         {items.map((m) => (
@@ -164,8 +176,8 @@ export default function Dashboard() {
         {busy
           ? "Reading blockchain…"
           : creator
-            ? "No models registered. Models registered by this wallet will appear here."
-            : "No licenses yet. Models licensed by this wallet will appear here."}
+          ? "No models registered. Models registered by this wallet will appear here."
+          : "No licenses yet. Models licensed by this wallet will appear here."}
         <p>
           <Link to={creator ? "/upload-model" : "/marketplace"}>
             {creator ? "Register model" : "Explore models"} →
@@ -189,46 +201,67 @@ export default function Dashboard() {
   return (
     <div className="dashboard-page">
       <main className="dashboard-content">
-        <div className="section-label">YOUR WORKSPACE</div>
-        <h1>Overview</h1>
-        <p>Ownership and licenses are read directly from ModelChain.</p>
+        <header className="page-heading">
+          <div>
+            <div className="section-label">CREATOR WORKSPACE</div>
+            <h1>Dashboard</h1>
+            <p>Manage owned models, licenses, and protocol revenue.</p>
+          </div>
+          <button onClick={connect} disabled={busy}>
+            {short(address)} · Refresh
+          </button>
+        </header>
         <p className="caption">
           Withdrawable revenue is pendingWithdrawals for this authenticated
           wallet. Creator shares and platform fees can belong to the same
           wallet; buying alone earns no revenue.
         </p>
-        <button onClick={connect} disabled={busy}>
-          {address ? short(address) : "Connect wallet"}
-        </button>
         <p role="status">{status}</p>
         <section className="dashboard-grid">
           <article className="dashboard-card">
-            <h2>{models.length}</h2>
+            <h2>{loaded ? models.length : "—"}</h2>
             <p>Models Owned</p>
           </article>
           <article className="dashboard-card">
-            <h2>{licenses.length}</h2>
+            <h2>{loaded ? licenses.length : "—"}</h2>
             <p>Licensed Models</p>
           </article>
           <article className="dashboard-card">
-            <h2>{revenue} ETH</h2>
+            <h2>{loaded ? revenue : "—"} ETH</h2>
             <p>Withdrawable revenue</p>
-            <button
-              disabled={busy || revenue === "0.0" || revenue === "0"}
-              onClick={() => action("withdraw")}
-            >
-              Withdraw
-            </button>
           </article>
           <article className="dashboard-card">
             <p>Current Network</p>
             <NetworkBadge />
           </article>
         </section>
-        <h2>My Models</h2>
-        {rows(models, true)}
-        <h2>My Licenses</h2>
-        {rows(licenses, false)}
+        <div className="workspace-lists">
+          <section className="panel">
+            <h2>My Models</h2>
+            {rows(models, true)}
+          </section>
+          <section className="panel">
+            <h2>My Licenses</h2>
+            {rows(licenses, false)}
+          </section>
+        </div>
+        <section className="revenue-banner">
+          <div>
+            <p>Creator revenue available</p>
+            <h2>{loaded ? revenue : "—"} ETH</h2>
+            <p>
+              {loaded
+                ? "Verified pending withdrawals for this wallet."
+                : "Awaiting a successful blockchain read."}
+            </p>
+          </div>
+          <button
+            disabled={!loaded || busy || revenue === "0.0" || revenue === "0"}
+            onClick={() => action("withdraw")}
+          >
+            Withdraw
+          </button>
+        </section>
       </main>
     </div>
   );
