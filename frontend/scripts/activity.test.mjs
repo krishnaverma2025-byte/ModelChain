@@ -49,39 +49,51 @@ test("decodes exact deployed event signatures and accounting semantics", () => {
 test("bounds historical queries, filters model events and excludes account withdrawals", async () => {
   const calls = [];
   const c = {
+    target: wallet,
     runner: { getBlockNumber: async () => 5000 },
     filters: Object.fromEntries(
       EVENT_NAMES.map((n) => [n, (id) => ({ n, id })]),
     ),
-    queryFilter: async (f, start, end) => {
-      calls.push({ f, start, end });
-      return [];
-    },
+  };
+  c.runner.getLogs = async (filter) => {
+    calls.push(filter);
+    return [];
   };
   const page = await readEventPage(c, { modelId: "1" });
   assert.equal(page.from, 3001);
   assert.equal(page.older, 3000);
-  assert.equal(calls.length, 4);
+  assert.equal(calls.length, 1);
   assert.ok(
     calls.every(
       (x) =>
-        x.start === 3001 &&
-        x.end === 5000 &&
-        x.f.id === 1n &&
-        x.f.n !== "RevenueWithdrawn",
+        x.fromBlock === 3001 &&
+        x.toBlock === 5000 &&
+        x.address === wallet &&
+        x.topics[0].length === 5,
     ),
   );
   const first = await readEventPage(c, { toBlock: 10 });
   assert.equal(first.from, 0);
   assert.equal(first.older, null);
   calls.length = 0;
-  const sepolia = await readEventPage(c, { toBlock: 5000, span: 10, fromBlock: 4995 });
+  const sepolia = await readEventPage(c, {
+    toBlock: 5000,
+    span: 10,
+    fromBlock: 4995,
+  });
   assert.equal(sepolia.from, 4995);
   assert.equal(sepolia.older, null);
-  assert.ok(calls.every(x => x.end - x.start + 1 <= 10));
-  assert.equal((await readEventPage(c, { toBlock: 5000, span: 10, fromBlock: 4900 })).older, 4990);
-  await assert.rejects(readEventPage(c, { fromBlock: NaN }), /Invalid activity/);
-  c.queryFilter = async () => {
+  assert.ok(calls.every((x) => x.toBlock - x.fromBlock + 1 <= 10));
+  assert.equal(
+    (await readEventPage(c, { toBlock: 5000, span: 10, fromBlock: 4900 }))
+      .older,
+    4990,
+  );
+  await assert.rejects(
+    readEventPage(c, { fromBlock: NaN }),
+    /Invalid activity/,
+  );
+  c.runner.getLogs = async () => {
     throw new Error("RPC unavailable");
   };
   await assert.rejects(readEventPage(c), /RPC unavailable/);

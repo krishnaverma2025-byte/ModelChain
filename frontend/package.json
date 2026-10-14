@@ -7,6 +7,7 @@
     "dev": "vite",
     "test": "node --test scripts/*.test.mjs",
     "test:e2e": "node scripts/e2e.mjs",
+    "test:history-browser": "node scripts/history-browser.mjs",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"

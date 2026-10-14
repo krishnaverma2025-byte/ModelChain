@@ -238,7 +238,7 @@ try {
   await page.goto(origin + "/marketplace");
   await page.getByRole("heading", { name: "No models available" }).waitFor();
   await page.goto(origin + "/activity");
-  await page.getByText("No events in this block range.").waitFor();
+  await page.getByText("No matching events in the complete scanned contract history.").waitFor();
   await page.goto(origin + "/upload");
   assert.equal(
     await page
@@ -819,7 +819,7 @@ try {
   await page.goto(origin + "/activity");
   await page.getByRole("button", { name: "Retry history" }).waitFor();
   assert.equal(
-    await page.getByText("No events in this block range.").count(),
+    await page.getByText("No matching events in the complete scanned contract history.").count(),
     0,
   );
   await page.unroute(rpc);
