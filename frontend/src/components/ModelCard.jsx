@@ -1,6 +1,5 @@
 import { Link } from "react-router-dom";
-import { Badge, CopyValue, VerifiedBadge, Icon } from "./UI";
-
+import { Badge, CopyValue, Icon } from "./UI";
 export default function ModelCard({ model }) {
   return (
     <article className="model-card">
@@ -15,33 +14,28 @@ export default function ModelCard({ model }) {
             .toUpperCase()}
         </span>
         <span className="art-proof">
-          <Icon name="shield" /> SHA-256 registered
+          <Icon name="shield" />
+          SHA-256 registered
         </span>
       </div>
       <div className="model-card-body">
-        <div className="section-head">
-          <p className="caption">
-            MODEL <code>#{model.id}</code>
-          </p>
+        <div className="card-heading">
+          <div>
+            <h2>{model.name}</h2>
+            <CopyValue value={model.owner} label="creator" compact />
+          </div>
           <Badge tone={model.active ? "success" : "neutral"}>
-            {model.active ? "ACTIVE" : "INACTIVE"}
+            {model.active ? "Active" : "Inactive"}
           </Badge>
-        </div>
-        <h2>{model.name}</h2>
-        <p className="model-description">{model.description}</p>
-        <VerifiedBadge />
-        <div className="card-creator">
-          <span>Creator</span>
-          <CopyValue value={model.owner} label="creator" compact />
         </div>
         <div className="model-footer">
           <div>
-            <span className="caption">License</span>
-            <strong>
-              {model.price} <span>ETH</span>
-            </strong>
+            <p>License</p>
+            <strong>{model.price} ETH</strong>
           </div>
-          <Link to={`/model/${model.id}`}>View Model →</Link>
+          <Link to={`/model/${model.id}`}>
+            View model <Icon name="arrow" />
+          </Link>
         </div>
       </div>
     </article>

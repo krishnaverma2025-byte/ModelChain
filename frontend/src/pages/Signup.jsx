@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "../supabaseClient";
+import { Icon } from "../components/UI";
 export default function Signup() {
   const [email, setEmail] = useState(""),
     [password, setPassword] = useState(""),
@@ -13,7 +14,7 @@ export default function Signup() {
       const { error } = await supabase.auth.signUp({ email, password });
       if (error) throw error;
       setMessage(
-        "Profile created. Check your email, then optionally link your authenticated wallet from Profile.",
+        "Profile created. Check your email, then optionally link your authenticated wallet from Profile."
       );
     } catch (e) {
       setMessage(e.message);
@@ -38,10 +39,9 @@ export default function Signup() {
   return (
     <main className="auth-page">
       <section className="auth-card">
-        <Link to="/" className="navbar-logo">
-          MontAI
+        <Link to="/" className="auth-logo" aria-label="MontAI home">
+          <Icon />
         </Link>
-        <p className="eyebrow">OPTIONAL HUMAN PROFILE</p>
         <h1>Create a MontAI profile</h1>
         <p>
           This creates a profile, not a blockchain wallet. Your wallet signature

@@ -12,6 +12,7 @@ import {
 import { NetworkBadge } from "../components/UI";
 import useIdentity from "../useIdentity";
 import WalletGate from "../components/WalletGate";
+import { VerificationRing } from "../components/BrandEffects";
 
 export default function Dashboard() {
   const identity = useIdentity();
@@ -154,7 +155,7 @@ export default function Dashboard() {
                 <Link to={`/model/${m.id}`}>{m.name}</Link>
               </h3>
               <p>
-                {m.price} ETH · Creator share {m.royalty}%
+                {m.active ? "Active" : "Inactive"} · {m.price} ETH
               </p>
               <p title={m.cid}>{short(m.cid)}</p>
             </div>
@@ -211,11 +212,6 @@ export default function Dashboard() {
             {short(address)} · Refresh
           </button>
         </header>
-        <p className="caption">
-          Withdrawable revenue is pendingWithdrawals for this authenticated
-          wallet. Creator shares and platform fees can belong to the same
-          wallet; buying alone earns no revenue.
-        </p>
         <p role="status">{status}</p>
         <section className="dashboard-grid">
           <article className="dashboard-card">
@@ -249,18 +245,26 @@ export default function Dashboard() {
           <div>
             <p>Creator revenue available</p>
             <h2>{loaded ? revenue : "—"} ETH</h2>
-            <p>
-              {loaded
-                ? "Verified pending withdrawals for this wallet."
-                : "Awaiting a successful blockchain read."}
-            </p>
+            {!loaded && <p>Awaiting a successful blockchain read.</p>}
+            <button
+              disabled={!loaded || busy || revenue === "0.0" || revenue === "0"}
+              onClick={() => action("withdraw")}
+            >
+              Withdraw
+            </button>
           </div>
-          <button
-            disabled={!loaded || busy || revenue === "0.0" || revenue === "0"}
-            onClick={() => action("withdraw")}
-          >
-            Withdraw
-          </button>
+          <VerificationRing
+            verified={Boolean(identity.profile)}
+            label="Profile"
+            detail={
+              identity.profile ? "Profile signed in" : "No optional profile"
+            }
+          />
+          <VerificationRing
+            verified={Boolean(identity.authenticated)}
+            label="Wallet"
+            detail="Wallet signature authenticated"
+          />
         </section>
       </main>
     </div>

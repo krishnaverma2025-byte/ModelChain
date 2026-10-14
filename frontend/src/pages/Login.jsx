@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { supabase } from "../supabaseClient";
 import useIdentity from "../useIdentity";
 import WalletGate from "../components/WalletGate";
-import { CopyValue } from "../components/UI";
+import { CopyValue, Icon } from "../components/UI";
 export default function Login() {
   const identity = useIdentity();
   const [email, setEmail] = useState(""),
@@ -21,7 +21,7 @@ export default function Login() {
       });
       if (error) throw error;
       setMessage(
-        "Optional profile signed in. Blockchain access still requires your wallet signature.",
+        "Optional profile signed in. Blockchain access still requires your wallet signature."
       );
     } catch (e) {
       setMessage(e.message);
@@ -46,16 +46,11 @@ export default function Login() {
   return (
     <main className="auth-page">
       <section className="auth-card">
-        <Link className="navbar-logo" to="/">
-          MontAI
+        <Link className="auth-logo" to="/" aria-label="MontAI home">
+          <Icon />
         </Link>
-        <p className="eyebrow">WALLET IDENTITY</p>
-        <h1>Sign in to MontAI</h1>
-        <p>
-          Use your Ethereum wallet to register models, manage licenses and
-          access protected downloads. Authentication is a free signature, not a
-          transaction.
-        </p>
+        <h1>Welcome to MontAI</h1>
+        <p>Authenticate your wallet to publish, license, and manage models.</p>
         {identity.authenticated ? (
           <div className="notice">
             <h3>Wallet authenticated</h3>
@@ -68,11 +63,10 @@ export default function Login() {
         ) : (
           <WalletGate action="use blockchain features" />
         )}
-        <div className="auth-divider">Optional profile</div>
         <p className="caption">
-          Google/email creates a human profile only. It does not grant
-          ownership, licenses or download access.
+          Google/email is optional and does not grant model access.
         </p>
+        {identity.profile && <Link to="/profile">Manage your profile →</Link>}
         {supabase ? (
           <>
             <button onClick={google} disabled={busy}>
@@ -80,9 +74,10 @@ export default function Login() {
             </button>
             <form onSubmit={profileLogin}>
               <label>
-                Email
+                <span className="sr-only">Email</span>
                 <input
                   type="email"
+                  placeholder="Email"
                   autoComplete="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -90,9 +85,10 @@ export default function Login() {
                 />
               </label>
               <label>
-                Password
+                <span className="sr-only">Password</span>
                 <input
                   type="password"
+                  placeholder="Password"
                   autoComplete="current-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}

@@ -1,5 +1,10 @@
 # MontAI v3 frontend integration
 
+> Historical record of the initial `e2d4ec7` integration. Its expanded homepage
+> and layouts were superseded by the original-design fidelity correction.
+> See [V3 design fidelity](MONTAI_V3_DESIGN_FIDELITY.md) for the current UI,
+> paired reference comparison and Preview configuration findings.
+
 ## Scope and source
 
 Integrated the supplied `MontAi v3.zip`, using its nested `src.zip` active

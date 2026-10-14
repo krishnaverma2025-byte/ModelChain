@@ -27,6 +27,8 @@ export function loadCatalog({signal} = {}) {
       owner: model.owner,
       active: model.active,
       price: formatEther(model.price),
+      modelHash: model.modelHash,
+      cid: model.cid,
     });
   }
   return models;

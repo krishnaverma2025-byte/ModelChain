@@ -133,206 +133,212 @@ function Profile() {
 
   const blockchainIdentity = (
     <section className="profile-section">
-      <h2>Blockchain identity</h2>
-      <p>
-        Wallet signatures authenticate you. Ownership and licenses come from
-        ModelChain, not your profile.
-      </p>
-      <dl className="provenance-fields">
-        <div>
-          <dt>Linked wallet</dt>
-          <dd>
-            <CopyValue value={identity.linked} label="linked wallet" />
-          </dd>
-        </div>
-        <div>
-          <dt>MetaMask connection</dt>
-          <dd>
-            <CopyValue value={identity.connected} label="connected wallet" />
-          </dd>
-        </div>
-        <div>
-          <dt>Wallet authentication</dt>
-          <dd>
-            {identity.authenticated ? "Authenticated" : "Not authenticated"}
-          </dd>
-        </div>
-        <div>
-          <dt>Required network</dt>
-          <dd>
-            <NetworkBadge />
-          </dd>
-        </div>
-        <div>
-          <dt>Connected chain</dt>
-          <dd>{identity.chain || "Not connected"}</dd>
-        </div>
-      </dl>
-      <WalletGate action="authenticate your blockchain identity" />
-      {identity.profile && identity.authenticated && !identity.linked && (
+      <div className="profile-linked-wallet">
+        <p>Linked wallet</p>
+        <CopyValue
+          value={identity.linked || identity.authenticated}
+          label="linked wallet"
+          compact
+        />
+      </div>
+      <details className="profile-security-options">
+        <summary>Wallet & security options</summary>
+        <dl className="provenance-fields">
+          <div>
+            <dt>Linked wallet</dt>
+            <dd>
+              <CopyValue value={identity.linked} label="linked wallet" />
+            </dd>
+          </div>
+          <div>
+            <dt>MetaMask connection</dt>
+            <dd>
+              <CopyValue value={identity.connected} label="connected wallet" />
+            </dd>
+          </div>
+          <div>
+            <dt>Wallet authentication</dt>
+            <dd>
+              {identity.authenticated ? "Authenticated" : "Not authenticated"}
+            </dd>
+          </div>
+          <div>
+            <dt>Required network</dt>
+            <dd>
+              <NetworkBadge />
+            </dd>
+          </div>
+          <div>
+            <dt>Connected chain</dt>
+            <dd>{identity.chain || "Not connected"}</dd>
+          </div>
+        </dl>
+        {identity.profile && identity.authenticated && !identity.linked && (
+          <button
+            disabled={saving}
+            onClick={async () => {
+              setSaving(true);
+              try {
+                await linkProfileWallet();
+                setMessage(
+                  "Public wallet address linked to profile. This grants no blockchain rights."
+                );
+              } catch (e) {
+                setMessage(errorText(e));
+              } finally {
+                setSaving(false);
+              }
+            }}
+          >
+            Link authenticated wallet
+          </button>
+        )}
         <button
-          disabled={saving}
           onClick={async () => {
-            setSaving(true);
             try {
-              await linkProfileWallet();
-              setMessage(
-                "Public wallet address linked to profile. This grants no blockchain rights.",
-              );
+              await logout();
+              navigate("/login");
             } catch (e) {
               setMessage(errorText(e));
-            } finally {
-              setSaving(false);
             }
           }}
         >
-          Link authenticated wallet
+          Logout
         </button>
+      </details>
+      {!identity.authenticated && (
+        <WalletGate action="authenticate your blockchain identity" />
       )}
-      <button
-        onClick={async () => {
-          try {
-            await logout();
-            navigate("/login");
-          } catch (e) {
-            setMessage(errorText(e));
-          }
-        }}
-      >
-        Logout
-      </button>
     </section>
+  );
+  const heading = (
+    <header className="page-heading">
+      <div>
+        <p className="eyebrow">Account</p>
+        <h1>Profile & identity</h1>
+        <p>Manage your optional profile and linked blockchain identity.</p>
+      </div>
+    </header>
   );
   if (!user)
     return (
-      <main className="auth-page">
-        <section className="auth-card">
-          <h1>Profile & wallet</h1>
-          <p>
-            No optional human profile signed in. Wallet authentication works
-            independently.
-          </p>
-          {blockchainIdentity}
-          <button onClick={() => navigate("/login")}>
-            Optional profile sign-in
-          </button>
-          {message && <p role="status">{message}</p>}
-        </section>
+      <main className="profile-page">
+        <div className="profile-container">
+          {heading}
+          <section className="profile-card">
+            <p>
+              No optional human profile signed in. Wallet authentication works
+              independently.
+            </p>
+            {blockchainIdentity}
+            <button onClick={() => navigate("/login")}>
+              Optional profile sign-in
+            </button>
+            {message && <p role="status">{message}</p>}
+          </section>
+        </div>
       </main>
     );
-
-  const createdDate = new Date(user.created_at).toLocaleDateString();
 
   const displayAvatar =
     avatarUrl ||
     `https://ui-avatars.com/api/?name=${encodeURIComponent(
-      fullName || user.email,
+      fullName || user.email
     )}&background=1966d2&color=fff`;
 
   return (
-    <div className="profile-page">
-      <div className="profile-card">
-        {/* HEADER */}
-        <div className="profile-header">
-          <div className="profile-avatar-wrapper">
-            <img
-              src={displayAvatar}
-              alt="Profile"
-              className="profile-avatar-image"
-            />
+    <main className="profile-page">
+      <div className="profile-container">
+        {heading}
+        <div className="profile-card">
+          {/* HEADER */}
+          <div className="profile-header">
+            <div className="profile-avatar-wrapper">
+              <img
+                src={displayAvatar}
+                alt="Profile"
+                className="profile-avatar-image"
+              />
 
-            <label htmlFor="profile-picture" className="avatar-upload-button">
-              📷
-            </label>
+              <label htmlFor="profile-picture" className="avatar-upload-button">
+                📷
+              </label>
+
+              <input
+                id="profile-picture"
+                type="file"
+                accept="image/*"
+                onChange={handleImageChange}
+                hidden
+              />
+            </div>
+
+            <div>
+              <strong>Profile image</strong>
+              <p>Click to upload a new image</p>
+            </div>
+          </div>
+
+          {blockchainIdentity}
+
+          {/* FULL NAME */}
+          <div className="profile-section">
+            <label htmlFor="profile-name">Full Name</label>
 
             <input
-              id="profile-picture"
-              type="file"
-              accept="image/*"
-              onChange={handleImageChange}
-              hidden
+              id="profile-name"
+              type="text"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              placeholder="Enter your full name"
             />
           </div>
 
-          <div>
-            <h1>My Profile</h1>
+          {/* EMAIL */}
+          <div className="profile-section">
+            <label>Email</label>
 
-            <p>
-              Optional account profile — independent of your blockchain assets
-            </p>
+            <div className="profile-value">{user.email}</div>
+          </div>
+
+          {/* MESSAGE */}
+          {message && <div className="profile-message">{message}</div>}
+
+          {/* ACTIONS */}
+          <button
+            onClick={async () => {
+              const { error } = await supabase.auth.resetPasswordForEmail(
+                user.email,
+                { redirectTo: window.location.origin + "/login" }
+              );
+              setMessage(
+                error
+                  ? error.message
+                  : "Password reset link sent to your profile email."
+              );
+            }}
+          >
+            Reset password
+          </button>
+          <div className="profile-actions">
+            <button
+              className="profile-save-button"
+              onClick={handleSave}
+              disabled={saving}
+            >
+              {saving ? "Saving..." : "Save Profile"}
+            </button>
+
+            <button
+              className="profile-back-button"
+              onClick={() => navigate("/")}
+            >
+              Back to Home
+            </button>
           </div>
         </div>
-
-        {blockchainIdentity}
-
-        {/* FULL NAME */}
-        <div className="profile-section">
-          <label htmlFor="profile-name">Full Name</label>
-
-          <input
-            id="profile-name"
-            type="text"
-            value={fullName}
-            onChange={(e) => setFullName(e.target.value)}
-            placeholder="Enter your full name"
-          />
-        </div>
-
-        {/* EMAIL */}
-        <div className="profile-section">
-          <label>Email</label>
-
-          <div className="profile-value">{user.email}</div>
-        </div>
-
-        {/* USER ID */}
-        <div className="profile-section">
-          <label>User ID</label>
-
-          <div className="profile-value user-id">{user.id}</div>
-        </div>
-
-        {/* ACCOUNT CREATED */}
-        <div className="profile-section">
-          <label>Account created</label>
-
-          <div className="profile-value">{createdDate}</div>
-        </div>
-
-        {/* MESSAGE */}
-        {message && <div className="profile-message">{message}</div>}
-
-        {/* ACTIONS */}
-        <button
-          onClick={async () => {
-            const { error } = await supabase.auth.resetPasswordForEmail(
-              user.email,
-              { redirectTo: window.location.origin + "/login" },
-            );
-            setMessage(
-              error
-                ? error.message
-                : "Password reset link sent to your profile email.",
-            );
-          }}
-        >
-          Reset password
-        </button>
-        <div className="profile-actions">
-          <button
-            className="profile-save-button"
-            onClick={handleSave}
-            disabled={saving}
-          >
-            {saving ? "Saving..." : "Save Profile"}
-          </button>
-
-          <button className="profile-back-button" onClick={() => navigate("/")}>
-            Back to Home
-          </button>
-        </div>
       </div>
-    </div>
+    </main>
   );
 }
 

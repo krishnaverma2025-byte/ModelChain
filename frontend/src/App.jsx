@@ -40,7 +40,7 @@ function Footer() {
       <strong>MontAI</strong>
       <span>Verifiable AI ownership. Secure model access.</span>
       <nav aria-label="Footer navigation">
-        <Link to="/activity">Activity & status</Link>
+        <a href="https://github.com/krishnaverma2025-byte/ModelChain#readme" target="_blank" rel="noopener noreferrer">Docs</a>
         {contract ? (
           <a href={contract} target="_blank" rel="noopener noreferrer">
             Contract ↗
@@ -48,7 +48,7 @@ function Footer() {
         ) : (
           <span>Local development</span>
         )}
-        <Link to="/profile">Profile</Link>
+        <Link to="/activity">Status</Link>
       </nav>
     </footer>
   );
